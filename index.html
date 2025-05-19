@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -188,8 +187,7 @@
       25% { transform: translateX(-5px); }
       75% { transform: translateX(5px); }
     }
-    
-    /* Modal styles for welcome and leaderboard */
+      /* Modal styles for welcome and leaderboard */
     .modal {
       display: none;
       position: fixed;
@@ -199,6 +197,13 @@
       width: 100%;
       height: 100%;
       background-color: rgba(0, 0, 0, 0.7);
+      overflow-y: auto;
+      animation: fadeIn 0.3s ease-out;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
     }
     
     .modal-content {
@@ -210,6 +215,12 @@
       border-radius: 8px;
       box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
       color: white;
+      animation: slideIn 0.3s ease-out;
+    }
+    
+    @keyframes slideIn {
+      from { transform: translateY(-20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
     }
     
     .modal h2 {
@@ -226,25 +237,58 @@
       border-radius: 4px;
       color: white;
       font-size: 1rem;
+    }.table-container {
+      width: 100%;
+      overflow-x: auto;
+      margin-top: 15px;
+      -webkit-overflow-scrolling: touch;
+      border-radius: 4px;
+      border: 1px solid #444;
     }
     
     .leaderboard-table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 15px;
+      min-width: 380px;
     }
     
     .leaderboard-table th, .leaderboard-table td {
       padding: 8px;
       text-align: left;
       border-bottom: 1px solid #444;
+      white-space: nowrap;
     }
     
     .leaderboard-table th {
       background-color: #333;
       color: var(--primary-color);
     }
-      .bottom-buttons {
+      .win-modal {
+      text-align: center;
+      background-color: #222;
+      border: 2px solid var(--win-color);
+    }
+    
+    .win-modal h2 {
+      color: var(--win-color);
+      animation: pulse 1.5s infinite;
+    }
+    
+    .win-details {
+      margin: 20px 0;
+      font-size: 1.1rem;
+      line-height: 1.8;
+    }
+    
+    .primary-btn {
+      background-color: var(--win-color);
+    }
+    
+    .primary-btn:active {
+      background-color: #3d8c40;
+    }
+    
+    .bottom-buttons {
       display: flex;
       justify-content: center;
       gap: 10px;
@@ -325,9 +369,7 @@
       .disk {
         font-size: 0.75rem;
       }
-    }
-
-    @media (max-width: 500px) {
+    }    @media (max-width: 500px) {
       :root {
         --disk-height: 18px;
         --disk-min-width: 40px;
@@ -361,6 +403,40 @@
 
       .disk {
         font-size: 0.7rem;
+      }
+      
+      .modal-content {
+        width: 95%;
+        margin: 10% auto;
+        padding: 15px;
+      }
+      
+      .leaderboard-table {
+        font-size: 0.9rem;
+      }
+      
+      .leaderboard-table th, .leaderboard-table td {
+        padding: 6px 4px;
+      }
+      
+      .table-container {
+        margin-bottom: 10px;
+      }
+      
+      .win-details {
+        font-size: 1rem;
+        line-height: 1.6;
+        margin: 15px 0;
+      }
+      
+      .bottom-buttons {
+        flex-direction: column;
+        width: 100%;
+      }
+      
+      .bottom-buttons button {
+        width: 100%;
+        margin-bottom: 8px;
       }
     }
 
@@ -448,7 +524,7 @@
       </div>
     </div>
   </div>
-    <!-- Leaderboard Modal -->
+  <!-- Leaderboard Modal -->
   <div id="leaderboardModal" class="modal">
     <div class="modal-content">
       <h2>Leaderboard</h2>
@@ -457,20 +533,39 @@
         <label for="leaderboardLevelSelect">Level: </label>
         <select id="leaderboardLevelSelect"></select>
       </div>
-      <table class="leaderboard-table">
-        <thead>
-          <tr>
-            <th>Rank</th>
-            <th>Player</th>
-            <th>Moves</th>
-            <th>Time</th>
-            <th>Date</th>
-          </tr>
-        </thead>
-        <tbody id="leaderboardBody"></tbody>
-      </table>
+      <div class="table-container">
+        <table class="leaderboard-table">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Player</th>
+              <th>Moves</th>
+              <th>Time</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboardBody"></tbody>
+        </table>
+      </div>
       <div class="bottom-buttons">
         <button id="closeLeaderboardBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Win Modal -->
+  <div id="winModal" class="modal">
+    <div class="modal-content win-modal">
+      <h2>🎉 CONGRATULATIONS! 🎉</h2>
+      <div class="win-details">
+        <p>You won Level <span id="winLevel"></span> in <span id="winMoves" class="highlight-text"></span> moves!</p>
+        <p>Time: <span id="winTime" class="highlight-text"></span></p>
+        <p>Optimal moves: <span id="winOptimal"></span></p>
+        <p>Efficiency: <span id="winEfficiency" class="highlight-text"></span>%</p>
+      </div>
+      <div class="bottom-buttons">
+        <button id="nextLevelBtn2" class="primary-btn">Next Level</button>
+        <button id="stayBtn">Stay Here</button>
       </div>
     </div>
   </div>
@@ -513,7 +608,15 @@
           closeLeaderboardBtn: document.getElementById('closeLeaderboardBtn'),
           currentPlayerName: document.getElementById('currentPlayerName'),
           changePlayerBtn: document.getElementById('changePlayerBtn'),
-          playerNameDisplay: document.getElementById('playerNameDisplay')
+          playerNameDisplay: document.getElementById('playerNameDisplay'),          // Win modal elements
+          winModal: document.getElementById('winModal'),
+          winLevel: document.getElementById('winLevel'),
+          winMoves: document.getElementById('winMoves'),
+          winTime: document.getElementById('winTime'),
+          winOptimal: document.getElementById('winOptimal'),
+          winEfficiency: document.getElementById('winEfficiency'),
+          nextLevelBtn2: document.getElementById('nextLevelBtn2'),
+          stayBtn: document.getElementById('stayBtn')
         };this.init();
       }      init() {
         this.loadPlayerName();
@@ -756,19 +859,47 @@
             
             this.saveHighScore();
             
-            // Remove win animations after showing dialog
-            this.dom.towers[2].classList.remove('win-tower');
-            Array.from(lastStack.children).forEach(disk => {
-              disk.classList.remove('win-animation');
+            // Set values in the win modal
+            this.dom.winLevel.textContent = this.state.level;
+            this.dom.winMoves.textContent = this.state.moveCount;
+            this.dom.winTime.textContent = this.formatTime(this.state.timeElapsed);
+            this.dom.winOptimal.textContent = optimal;
+            this.dom.winEfficiency.textContent = efficiency;
+            
+            // Setup event listeners for the win modal buttons
+            const nextBtn = this.dom.nextLevelBtn2;
+            const stayBtn = this.dom.stayBtn;
+            
+            // Remove old event listeners
+            const newNextBtn = nextBtn.cloneNode(true);
+            nextBtn.parentNode.replaceChild(newNextBtn, nextBtn);
+            this.dom.nextLevelBtn2 = newNextBtn;
+            
+            const newStayBtn = stayBtn.cloneNode(true);
+            stayBtn.parentNode.replaceChild(newStayBtn, stayBtn);
+            this.dom.stayBtn = newStayBtn;
+            
+            // Add new event listeners
+            this.dom.nextLevelBtn2.addEventListener('click', () => {
+              this.dom.winModal.style.display = 'none';
+              this.dom.towers[2].classList.remove('win-tower');
+              Array.from(lastStack.children).forEach(disk => {
+                disk.classList.remove('win-animation');
+              });
+              this.nextLevel();
             });
             
-            if (confirm(`🎉 CONGRATULATIONS! 🎉\n\nYou won Level ${this.state.level} in ${this.state.moveCount} moves!\n` +
-                       `Time: ${this.formatTime(this.state.timeElapsed)}\n` +
-                       `Optimal moves: ${optimal}\n` +
-                       `Efficiency: ${efficiency}%\n\n` +
-                       `Go to next level?`)) {
-              this.nextLevel();
-            }
+            this.dom.stayBtn.addEventListener('click', () => {
+              this.dom.winModal.style.display = 'none';
+              this.dom.towers[2].classList.remove('win-tower');
+              Array.from(lastStack.children).forEach(disk => {
+                disk.classList.remove('win-animation');
+              });
+            });
+            
+            // Display the win modal
+            this.dom.winModal.style.display = 'block';
+            
           }, 1000);
         }
       }
