@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Tower of Hanoi</title>
+  <style>    :root {
+      --disk-height: 22px;
+      --disk-min-width: 50px;
+      --tower-width: 30vw;
+      --tower-min-width: 100px;
+      --tower-max-width: 150px;
+      --primary-color: #4a89dc;
+      --highlight-color: #5d9cec;
+      --win-color: #4caf50;
+      --error-color: #f44336;
+    }
+
+    * {
+      box-sizing: border-box;
+      touch-action: manipulation;
+    }
+
+    body {
+      margin: 0;
+      padding: 10px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #111;
+      color: white;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      margin: 10px 0 5px;
+      text-align: center;
+    }
+
+    .instructions {
+      text-align: center;
+      color: #aaa;
+      font-size: 0.9rem;
+      margin: 0 auto 15px;
+      max-width: 90%;
+    }
+
+    .game-info {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin: 0 auto 15px;
+      font-size: 0.95rem;
+      flex-wrap: wrap;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 0 auto 15px;
+      width: 100%;
+      max-width: 350px;
+    }
+
+    button {
+      background: var(--primary-color);
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      flex: 1;
+      min-width: 0;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button:active {
+      background: var(--highlight-color);
+    }
+
+    button:disabled {
+      background: #555;
+      cursor: not-allowed;
+    }
+
+    .game-area {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .tower-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 8px;
+      padding: 10px 5px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      flex-grow: 1;
+      min-height: 250px;
+    }
+
+    .tower-wrapper::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tower-container {
+      width: var(--tower-width);
+      min-width: var(--tower-min-width);
+      max-width: var(--tower-max-width);
+      background: #222;
+      border-radius: 8px;
+      padding: 10px 5px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .tower-container::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 8px;
+      height: 80px;
+      background: #555;
+      z-index: 0;
+    }
+
+    .disks-stack {
+      display: flex;
+      flex-direction: column-reverse;
+      align-items: center;
+      justify-content: flex-end;
+      flex-grow: 1;
+      padding-top: 20px;
+      position: relative;
+      z-index: 1;
+    }    .disk {
+      height: var(--disk-height);
+      min-width: var(--disk-min-width);
+      margin: 3px 0;
+      background: linear-gradient(to right, #4a89dc, #5d9cec);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: bold;
+      color: white;
+      text-shadow: 0 1px 1px rgba(0,0,0,0.3);
+      z-index: 2;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      user-select: none;
+      cursor: grab;
+      position: relative;
+    }
+
+    .disk.selected {
+      transform: translateY(-10px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+    }
+
+    .disk.dragging {
+      opacity: 0.9;
+      transform: scale(1.05);
+    }    .tower-container.highlight {
+      background: #333;
+      box-shadow: 0 0 15px rgba(93, 156, 236, 0.6);
+      transition: all 0.3s ease;
+    }
+
+    .tower-container.invalid {
+      animation: shake 0.3s;
+      background: rgba(200, 0, 0, 0.2);
+    }@keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+      /* Modal styles for welcome and leaderboard */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 100;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      overflow-y: auto;
+      animation: fadeIn 0.3s ease-out;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    .modal-content {
+      background-color: #222;
+      margin: 15% auto;
+      padding: 20px;
+      width: 80%;
+      max-width: 500px;
+      border-radius: 8px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+      color: white;
+      animation: slideIn 0.3s ease-out;
+    }
+    
+    @keyframes slideIn {
+      from { transform: translateY(-20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    
+    .modal h2 {
+      margin-top: 0;
+      color: var(--primary-color);
+    }
+    
+    .modal input {
+      width: 100%;
+      padding: 8px;
+      margin: 10px 0;
+      background-color: #333;
+      border: 1px solid #444;
+      border-radius: 4px;
+      color: white;
+      font-size: 1rem;
+    }.table-container {
+      width: 100%;
+      overflow-x: auto;
+      margin-top: 15px;
+      -webkit-overflow-scrolling: touch;
+      border-radius: 4px;
+      border: 1px solid #444;
+    }
+    
+    .leaderboard-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 380px;
+    }
+    
+    .leaderboard-table th, .leaderboard-table td {
+      padding: 8px;
+      text-align: left;
+      border-bottom: 1px solid #444;
+      white-space: nowrap;
+    }
+    
+    .leaderboard-table th {
+      background-color: #333;
+      color: var(--primary-color);
+    }
+      .win-modal {
+      text-align: center;
+      background-color: #222;
+      border: 2px solid var(--win-color);
+    }
+    
+    .win-modal h2 {
+      color: var(--win-color);
+      animation: pulse 1.5s infinite;
+    }
+    
+    .win-details {
+      margin: 20px 0;
+      font-size: 1.1rem;
+      line-height: 1.8;
+    }
+    
+    .primary-btn {
+      background-color: var(--win-color);
+    }
+    
+    .primary-btn:active {
+      background-color: #3d8c40;
+    }
+    
+    .bottom-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    
+    .small-btn {
+      flex: none;
+      padding: 4px 8px;
+      font-size: 0.8rem;
+      margin-left: 8px;
+    }
+      #currentPlayerName {
+      font-weight: bold;
+      color: var(--primary-color);
+    }
+    
+    .highlight-text {
+      font-weight: bold;
+      color: var(--highlight-color);
+    }
+    
+    /* Animation effects */
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+    
+    @keyframes glow {
+      0% { box-shadow: 0 0 5px rgba(93, 156, 236, 0.5); }
+      50% { box-shadow: 0 0 20px rgba(93, 156, 236, 0.8); }
+      100% { box-shadow: 0 0 5px rgba(93, 156, 236, 0.5); }
+    }
+    
+    .disk.win-animation {
+      animation: pulse 0.5s infinite, glow 1s infinite;
+    }
+    
+    .tower-container.win-tower {
+      animation: glow 1s infinite;
+    }
+    
+    .move-counter-change {
+      animation: pulse 0.3s;
+    }    /* Mobile-specific adjustments */
+    @media (max-width: 768px) {
+      :root {
+        --disk-height: 20px;
+        --disk-min-width: 45px;
+        --tower-width: 30vw;
+        --tower-min-width: 90px;
+      }
+
+      h1 {
+        font-size: 1.4rem;
+      }
+
+      .instructions {
+        font-size: 0.85rem;
+      }
+
+      .game-info {
+        font-size: 0.9rem;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .controls {
+        gap: 8px;
+      }
+
+      button {
+        padding: 8px 10px;
+        font-size: 0.85rem;
+      }
+
+      .disk {
+        font-size: 0.75rem;
+      }
+    }    @media (max-width: 500px) {
+      :root {
+        --disk-height: 18px;
+        --disk-min-width: 40px;
+        --tower-width: 28vw;
+        --tower-min-width: 85px;
+      }
+
+      h1 {
+        font-size: 1.3rem;
+      }
+
+      .instructions {
+        font-size: 0.8rem;
+      }
+
+      .game-info {
+        font-size: 0.85rem;
+        gap: 10px;
+      }
+
+      .controls {
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      button {
+        padding: 7px 10px;
+        font-size: 0.85rem;
+        margin-bottom: 5px;
+      }
+
+      .disk {
+        font-size: 0.7rem;
+      }
+      
+      .modal-content {
+        width: 95%;
+        margin: 10% auto;
+        padding: 15px;
+      }
+      
+      .leaderboard-table {
+        font-size: 0.9rem;
+      }
+      
+      .leaderboard-table th, .leaderboard-table td {
+        padding: 6px 4px;
+      }
+      
+      .table-container {
+        margin-bottom: 10px;
+      }
+      
+      .win-details {
+        font-size: 1rem;
+        line-height: 1.6;
+        margin: 15px 0;
+      }
+      
+      .bottom-buttons {
+        flex-direction: column;
+        width: 100%;
+      }
+      
+      .bottom-buttons button {
+        width: 100%;
+        margin-bottom: 8px;
+      }
+    }
+
+    /* Confetti effect */
+    .confetti {
+      position: fixed;
+      width: 10px;
+      height: 10px;
+      background-color: #f44336;
+      opacity: 0;
+      transform: rotate(45deg);
+      animation: confetti-fall 3s forwards;
+      z-index: 1000;
+    }
+    
+    @keyframes confetti-fall {
+      0% {
+        opacity: 1;
+        top: -10px;
+        transform: rotate(0deg);
+      }
+      100% {
+        opacity: 0;
+        top: 100vh;
+        transform: rotate(720deg);
+      }
+    }
+    
+    @media (max-width: 350px) {
+      :root {
+        --tower-width: 26vw;
+        --tower-min-width: 75px;
+      }
+
+      .controls {
+        flex-wrap: wrap;
+      }
+
+      button {
+        min-width: 80px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <img src="res/header.png" alt="">
+  <h1>Tower of Hanoi</h1>
+  <p class="instructions">Move all disks to the rightmost tower. Larger disks can't be placed on smaller ones.</p>
+  <div class="game-info">
+    <div>Player: <span id="playerNameDisplay" class="highlight-text"></span></div>
+    <div>Level: <span id="levelDisplay">1</span></div>
+    <div>Moves: <span id="moveCounter">0</span></div>
+    <div>Optimal: <span id="optimalMoves">7</span></div>
+    <div>Time: <span id="timer">00:00</span></div>
+  </div>
+  
+  <div class="controls">
+    <button id="resetBtn">Reset</button>
+    <button id="prevLevelBtn">← Level</button>
+    <button id="nextLevelBtn">Level →</button>
+    <button id="leaderboardBtn">Leaderboard</button>
+  </div>
+  
+  <div class="game-area">
+    <div class="tower-wrapper">
+      <div class="tower-container" data-tower="1">
+        <div class="disks-stack"></div>
+      </div>
+      <div class="tower-container" data-tower="2">
+        <div class="disks-stack"></div>
+      </div>
+      <div class="tower-container" data-tower="3">
+        <div class="disks-stack"></div>
+      </div>    </div>
+  </div>
+
+  <!-- Welcome Modal -->
+  <div id="welcomeModal" class="modal">
+    <div class="modal-content">
+      <h2>Welcome to Tower of Hanoi!</h2>
+      <p>Please enter your name to track your progress and compete in the leaderboard:</p>
+      <input type="text" id="playerNameInput" maxlength="15" placeholder="Your Name">
+      <div class="bottom-buttons">
+        <button id="startGameBtn">Start Game</button>
+      </div>
+    </div>
+  </div>
+  <!-- Leaderboard Modal -->
+  <div id="leaderboardModal" class="modal">
+    <div class="modal-content">
+      <h2>Leaderboard</h2>
+      <p>Player: <span id="currentPlayerName"></span> <button id="changePlayerBtn" class="small-btn">Change</button></p>
+      <div class="level-selector">
+        <label for="leaderboardLevelSelect">Level: </label>
+        <select id="leaderboardLevelSelect"></select>
+      </div>
+      <div class="table-container">
+        <table class="leaderboard-table">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Player</th>
+              <th>Moves</th>
+              <th>Time</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboardBody"></tbody>
+        </table>
+      </div>
+      <div class="bottom-buttons">
+        <button id="closeLeaderboardBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Win Modal -->
+  <div id="winModal" class="modal">
+    <div class="modal-content win-modal">
+      <h2>🎉 CONGRATULATIONS! 🎉</h2>
+      <div class="win-details">
+        <p>You won Level <span id="winLevel"></span> in <span id="winMoves" class="highlight-text"></span> moves!</p>
+        <p>Time: <span id="winTime" class="highlight-text"></span></p>
+        <p>Optimal moves: <span id="winOptimal"></span></p>
+        <p>Efficiency: <span id="winEfficiency" class="highlight-text"></span>%</p>
+      </div>
+      <div class="bottom-buttons">
+        <button id="nextLevelBtn2" class="primary-btn">Next Level</button>
+        <button id="stayBtn">Stay Here</button>
+      </div>
+    </div>
+  </div>
+
+  <script>    class HanoiGame {
+      constructor() {
+        // Force the welcome screen to show (for first-time users)
+        // Uncomment this line for testing
+        // localStorage.removeItem('hanoiPlayerName');
+        
+        this.state = {
+          selectedDisk: null,
+          selectedTower: null,
+          moveCount: 0,
+          level: 1,
+          minDisks: 3,
+          maxDisks: 8,
+          totalDisks: 3,
+          timeElapsed: 0,
+          timerRunning: false,
+          timerInterval: null,
+          playerName: '',
+          highScores: this.loadHighScores()
+        };        this.dom = {
+          towers: document.querySelectorAll('.tower-container'),
+          moveCounter: document.getElementById('moveCounter'),
+          levelDisplay: document.getElementById('levelDisplay'),
+          optimalMoves: document.getElementById('optimalMoves'),
+          timer: document.getElementById('timer'),
+          resetBtn: document.getElementById('resetBtn'),
+          prevLevelBtn: document.getElementById('prevLevelBtn'),
+          nextLevelBtn: document.getElementById('nextLevelBtn'),
+          leaderboardBtn: document.getElementById('leaderboardBtn'),
+          welcomeModal: document.getElementById('welcomeModal'),
+          playerNameInput: document.getElementById('playerNameInput'),
+          startGameBtn: document.getElementById('startGameBtn'),
+          leaderboardModal: document.getElementById('leaderboardModal'),
+          leaderboardLevelSelect: document.getElementById('leaderboardLevelSelect'),
+          leaderboardBody: document.getElementById('leaderboardBody'),
+          closeLeaderboardBtn: document.getElementById('closeLeaderboardBtn'),
+          currentPlayerName: document.getElementById('currentPlayerName'),
+          changePlayerBtn: document.getElementById('changePlayerBtn'),
+          playerNameDisplay: document.getElementById('playerNameDisplay'),          // Win modal elements
+          winModal: document.getElementById('winModal'),
+          winLevel: document.getElementById('winLevel'),
+          winMoves: document.getElementById('winMoves'),
+          winTime: document.getElementById('winTime'),
+          winOptimal: document.getElementById('winOptimal'),
+          winEfficiency: document.getElementById('winEfficiency'),
+          nextLevelBtn2: document.getElementById('nextLevelBtn2'),
+          stayBtn: document.getElementById('stayBtn')
+        };this.init();
+      }      init() {
+        this.loadPlayerName();
+        this.updatePlayerNameDisplay();
+        
+        if (!this.state.playerName) {
+          this.showWelcomeModal();
+        } else {
+          this.setupLevel(this.state.totalDisks);
+          this.setupEventListeners();
+        }
+        
+        // Always set up event listeners for the leaderboard
+        this.dom.leaderboardBtn.addEventListener('click', () => this.displayLeaderboard());
+        this.dom.closeLeaderboardBtn.addEventListener('click', () => {
+          this.dom.leaderboardModal.style.display = 'none';
+        });
+      }
+
+      loadPlayerName() {
+        const storedName = localStorage.getItem('hanoiPlayerName');
+        if (storedName) {
+          this.state.playerName = storedName;
+        }
+        return this.state.playerName;
+      }      savePlayerName(name) {
+        this.state.playerName = name;
+        localStorage.setItem('hanoiPlayerName', name);
+        this.updatePlayerNameDisplay();
+      }
+      
+      updatePlayerNameDisplay() {
+        if (this.dom.playerNameDisplay) {
+          this.dom.playerNameDisplay.textContent = this.state.playerName || 'Player';
+        }
+      }showWelcomeModal() {
+        this.dom.welcomeModal.style.display = 'block';
+        this.dom.playerNameInput.focus();
+        
+        // Remove any existing event listeners
+        const startButton = this.dom.startGameBtn;
+        const newStartButton = startButton.cloneNode(true);
+        startButton.parentNode.replaceChild(newStartButton, startButton);
+        this.dom.startGameBtn = newStartButton;
+        
+        this.dom.startGameBtn.addEventListener('click', () => {
+          const name = this.dom.playerNameInput.value.trim() || 'Player';
+          this.savePlayerName(name);
+          this.dom.welcomeModal.style.display = 'none';
+          this.setupLevel(this.state.totalDisks);
+          this.setupEventListeners();
+        });
+        
+        // Also add a keyboard event for Enter key
+        this.dom.playerNameInput.addEventListener('keyup', (e) => {
+          if (e.key === 'Enter') {
+            this.dom.startGameBtn.click();
+          }
+        });
+      }      setupLevel(n) {
+        n = Math.max(this.state.minDisks, Math.min(this.state.maxDisks, n));
+        this.state.totalDisks = n;        this.state.moveCount = 0;
+        this.state.selectedDisk = null;
+        this.state.selectedTower = null;
+        this.resetTimer();
+
+        const [towerA, towerB, towerC] = Array.from(this.dom.towers).map(t => t.querySelector('.disks-stack'));
+        [towerA, towerB, towerC].forEach(t => t.innerHTML = '');
+
+        // Color palette for prettier disks
+        const colors = [
+          { start: '#FF5722', end: '#FF7043' }, // Orange
+          { start: '#E91E63', end: '#EC407A' }, // Pink
+          { start: '#9C27B0', end: '#AB47BC' }, // Purple
+          { start: '#673AB7', end: '#7E57C2' }, // Deep Purple
+          { start: '#3F51B5', end: '#5C6BC0' }, // Indigo
+          { start: '#2196F3', end: '#42A5F5' }, // Blue
+          { start: '#00BCD4', end: '#26C6DA' }, // Cyan
+          { start: '#009688', end: '#26A69A' }  // Teal
+        ];
+
+        for (let i = n; i >= 1; i--) {
+          const disk = document.createElement('div');
+          disk.className = 'disk';
+          disk.dataset.size = i;
+          disk.style.width = `${40 + i * 12}px`;
+          
+          // Use color from our palette
+          const colorIndex = (i - 1) % colors.length;
+          disk.style.background = `linear-gradient(to right, ${colors[colorIndex].start}, ${colors[colorIndex].end})`;
+          
+          disk.textContent = i;
+          disk.draggable = true;
+          towerA.appendChild(disk);
+        }
+
+        this.updateUI();
+      }updateUI() {
+        this.dom.moveCounter.textContent = this.state.moveCount;
+        this.dom.levelDisplay.textContent = this.state.level;
+        this.dom.optimalMoves.textContent = Math.pow(2, this.state.totalDisks) - 1;
+        
+        // Add animation to move counter
+        if (this.state.moveCount > 0) {
+          this.dom.moveCounter.classList.add('move-counter-change');
+          setTimeout(() => {
+            this.dom.moveCounter.classList.remove('move-counter-change');
+          }, 300);
+        }
+        
+        this.dom.prevLevelBtn.disabled = this.state.level <= 1;
+        this.dom.nextLevelBtn.disabled = this.state.level >= (this.state.maxDisks - this.state.minDisks + 1);
+      }
+
+      isValidMove(disk, targetTower) {
+        if (this.state.selectedTower === targetTower) return false;
+        const stack = targetTower.querySelector('.disks-stack');
+        const topDisk = stack.lastElementChild;
+        return !topDisk || parseInt(disk.dataset.size) < parseInt(topDisk.dataset.size);
+      }
+
+      handleDragStart(e) {
+        const disk = e.target;
+        if (!disk.classList.contains('disk')) return;
+        
+        const stack = disk.parentElement;
+        if (disk !== stack.lastElementChild) {
+          e.preventDefault();
+          return;
+        }
+        
+        this.state.selectedDisk = disk;
+        this.state.selectedTower = stack.parentElement;
+        disk.classList.add('dragging', 'selected');
+        
+        this.highlightValidTowers();
+        e.dataTransfer.setData('text/plain', disk.dataset.size);
+        e.dataTransfer.effectAllowed = 'move';
+      }
+
+      handleTouchStart(e) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const element = document.elementFromPoint(touch.clientX, touch.clientY);
+        
+        if (!element.classList.contains('disk')) return;
+        
+        const disk = element;
+        const stack = disk.parentElement;
+        if (disk !== stack.lastElementChild) return;
+        
+        this.state.selectedDisk = disk;
+        this.state.selectedTower = stack.parentElement;
+        disk.classList.add('selected');
+        
+        this.highlightValidTowers();
+      }
+
+      highlightValidTowers() {
+        this.dom.towers.forEach(t => {
+          t.classList.toggle('highlight', 
+            t !== this.state.selectedTower && 
+            this.isValidMove(this.state.selectedDisk, t)
+          );
+        });
+      }
+
+      handleDragEnd() {
+        this.cleanupSelection();
+      }
+
+      handleTouchEnd(e) {
+        if (!this.state.selectedDisk) return;
+        
+        const touch = e.changedTouches[0];
+        const element = document.elementFromPoint(touch.clientX, touch.clientY);
+        const targetTower = element.closest('.tower-container');
+        
+        if (!targetTower || targetTower === this.state.selectedTower) {
+          this.cleanupSelection();
+          return;
+        }
+
+        this.processMove(targetTower);
+      }
+
+      handleDrop(e) {
+        e.preventDefault();
+        if (!this.state.selectedDisk) return;
+        
+        const targetTower = e.currentTarget;
+        this.processMove(targetTower);
+      }      processMove(targetTower) {
+        if (!this.isValidMove(this.state.selectedDisk, targetTower)) {
+          targetTower.classList.add('invalid');
+          setTimeout(() => {
+            targetTower.classList.remove('invalid');
+            this.cleanupSelection();
+          }, 300);
+          return;
+        }
+
+        // Start timer on first move
+        if (this.state.moveCount === 0) {
+          this.startTimer();
+        }
+
+        const stack = targetTower.querySelector('.disks-stack');
+        stack.appendChild(this.state.selectedDisk);
+        this.state.moveCount++;
+        this.updateUI();
+        this.cleanupSelection();
+        this.checkWin();
+      }
+
+      cleanupSelection() {
+        if (this.state.selectedDisk) {
+          this.state.selectedDisk.classList.remove('dragging', 'selected');
+          this.state.selectedDisk = null;
+        }
+        this.state.selectedTower = null;
+        this.dom.towers.forEach(t => t.classList.remove('highlight', 'invalid'));
+      }      checkWin() {
+        const lastStack = this.dom.towers[2].querySelector('.disks-stack');
+        if (lastStack.children.length === this.state.totalDisks) {
+          this.stopTimer();
+          
+          // Add win animations
+          this.dom.towers[2].classList.add('win-tower');
+          Array.from(lastStack.children).forEach(disk => {
+            disk.classList.add('win-animation');
+          });
+          
+          // Create confetti effect
+          this.createConfetti();
+          
+          setTimeout(() => {
+            const optimal = Math.pow(2, this.state.totalDisks) - 1;
+            const efficiency = Math.round((optimal / this.state.moveCount) * 100);
+            
+            this.saveHighScore();
+            
+            // Set values in the win modal
+            this.dom.winLevel.textContent = this.state.level;
+            this.dom.winMoves.textContent = this.state.moveCount;
+            this.dom.winTime.textContent = this.formatTime(this.state.timeElapsed);
+            this.dom.winOptimal.textContent = optimal;
+            this.dom.winEfficiency.textContent = efficiency;
+            
+            // Setup event listeners for the win modal buttons
+            const nextBtn = this.dom.nextLevelBtn2;
+            const stayBtn = this.dom.stayBtn;
+            
+            // Remove old event listeners
+            const newNextBtn = nextBtn.cloneNode(true);
+            nextBtn.parentNode.replaceChild(newNextBtn, nextBtn);
+            this.dom.nextLevelBtn2 = newNextBtn;
+            
+            const newStayBtn = stayBtn.cloneNode(true);
+            stayBtn.parentNode.replaceChild(newStayBtn, stayBtn);
+            this.dom.stayBtn = newStayBtn;
+            
+            // Add new event listeners
+            this.dom.nextLevelBtn2.addEventListener('click', () => {
+              this.dom.winModal.style.display = 'none';
+              this.dom.towers[2].classList.remove('win-tower');
+              Array.from(lastStack.children).forEach(disk => {
+                disk.classList.remove('win-animation');
+              });
+              this.nextLevel();
+            });
+            
+            this.dom.stayBtn.addEventListener('click', () => {
+              this.dom.winModal.style.display = 'none';
+              this.dom.towers[2].classList.remove('win-tower');
+              Array.from(lastStack.children).forEach(disk => {
+                disk.classList.remove('win-animation');
+              });
+            });
+            
+            // Display the win modal
+            this.dom.winModal.style.display = 'block';
+            
+          }, 1000);
+        }
+      }
+      
+      createConfetti() {
+        const colors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4caf50', '#8bc34a', '#ffeb3b', '#ffc107', '#ff9800', '#ff5722'];
+        const confettiCount = 100;
+        
+        for (let i = 0; i < confettiCount; i++) {
+          setTimeout(() => {
+            const confetti = document.createElement('div');
+            confetti.className = 'confetti';
+            confetti.style.left = Math.random() * 100 + 'vw';
+            confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            confetti.style.width = (Math.random() * 8 + 5) + 'px';
+            confetti.style.height = (Math.random() * 8 + 5) + 'px';
+            confetti.style.animationDuration = (Math.random() * 3 + 2) + 's';
+            document.body.appendChild(confetti);
+            
+            // Remove confetti after animation
+            setTimeout(() => {
+              document.body.removeChild(confetti);
+            }, 5000);
+          }, Math.random() * 500);
+        }
+      }
+      
+      // Timer methods
+      startTimer() {
+        if (!this.state.timerRunning) {
+          this.state.timerRunning = true;
+          const startTime = Date.now() - this.state.timeElapsed;
+          this.state.timerInterval = setInterval(() => {
+            this.state.timeElapsed = Date.now() - startTime;
+            this.updateTimerDisplay();
+          }, 100);
+        }
+      }
+
+      stopTimer() {
+        if (this.state.timerRunning) {
+          this.state.timerRunning = false;
+          clearInterval(this.state.timerInterval);
+        }
+      }
+
+      resetTimer() {
+        this.stopTimer();
+        this.state.timeElapsed = 0;
+        this.updateTimerDisplay();
+      }
+
+      updateTimerDisplay() {
+        const seconds = Math.floor(this.state.timeElapsed / 1000);
+        const minutes = Math.floor(seconds / 60);
+        const displaySeconds = seconds % 60;
+        this.dom.timer.textContent = `${minutes.toString().padStart(2, '0')}:${displaySeconds.toString().padStart(2, '0')}`;
+      }
+      
+      formatTime(ms) {
+        const seconds = Math.floor(ms / 1000);
+        const minutes = Math.floor(seconds / 60);
+        const displaySeconds = seconds % 60;
+        return `${minutes.toString().padStart(2, '0')}:${displaySeconds.toString().padStart(2, '0')}`;
+      }
+      
+      // Leaderboard methods
+      loadHighScores() {
+        const scores = localStorage.getItem('hanoiHighScores');
+        return scores ? JSON.parse(scores) : {};
+      }
+
+      saveHighScore() {
+        if (!this.state.playerName) return;
+        
+        const levelKey = `level${this.state.level}`;
+        const score = {
+          playerName: this.state.playerName,
+          moves: this.state.moveCount,
+          time: this.state.timeElapsed,
+          date: new Date().toISOString()
+        };
+        
+        let highScores = this.loadHighScores();
+        
+        if (!highScores[levelKey]) {
+          highScores[levelKey] = [];
+        }
+        
+        highScores[levelKey].push(score);
+        highScores[levelKey].sort((a, b) => {
+          // Sort first by moves (ascending)
+          if (a.moves !== b.moves) {
+            return a.moves - b.moves;
+          }
+          // Then by time (ascending)
+          return a.time - b.time;
+        });
+        
+        // Keep top 10 for each level
+        highScores[levelKey] = highScores[levelKey].slice(0, 10);
+        
+        localStorage.setItem('hanoiHighScores', JSON.stringify(highScores));
+        this.state.highScores = highScores;
+      }      displayLeaderboard() {
+        const select = this.dom.leaderboardLevelSelect;
+        select.innerHTML = '';
+        
+        // Show current player name
+        this.dom.currentPlayerName.textContent = this.state.playerName;
+        
+        // Populate level selector
+        for (let i = this.state.minDisks; i <= this.state.maxDisks; i++) {
+          const level = i - this.state.minDisks + 1;
+          const option = document.createElement('option');
+          option.value = level;
+          option.textContent = `Level ${level} (${i} disks)`;
+          select.appendChild(option);
+        }
+        
+        // Set current level as selected
+        select.value = this.state.level;
+        
+        // Display scores for current level
+        this.updateLeaderboardDisplay();
+        
+        // Show modal
+        this.dom.leaderboardModal.style.display = 'block';
+        
+        // Add event listener for level change
+        select.onchange = () => this.updateLeaderboardDisplay();
+          // Add event listener for changing player
+        this.dom.changePlayerBtn.onclick = () => {
+          this.dom.leaderboardModal.style.display = 'none';
+          localStorage.removeItem('hanoiPlayerName');
+          this.state.playerName = '';
+          this.updatePlayerNameDisplay();
+          this.showWelcomeModal();
+        };
+      }
+      
+      updateLeaderboardDisplay() {
+        const level = parseInt(this.dom.leaderboardLevelSelect.value);
+        const levelKey = `level${level}`;
+        const scores = this.state.highScores[levelKey] || [];
+        const tbody = this.dom.leaderboardBody;
+        
+        tbody.innerHTML = '';
+        
+        if (scores.length === 0) {
+          const row = document.createElement('tr');
+          row.innerHTML = '<td colspan="5" style="text-align: center;">No scores yet for this level</td>';
+          tbody.appendChild(row);
+          return;
+        }
+        
+        scores.forEach((score, index) => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${index + 1}</td>
+            <td>${score.playerName}</td>
+            <td>${score.moves}</td>
+            <td>${this.formatTime(score.time)}</td>
+            <td>${new Date(score.date).toLocaleDateString()}</td>
+          `;
+          tbody.appendChild(row);
+        });
+      }
+
+      resetLevel() {
+        this.setupLevel(this.state.totalDisks);
+      }
+
+      prevLevel() {
+        if (this.state.level > 1) {
+          this.state.level--;
+          this.state.totalDisks--;
+          this.setupLevel(this.state.totalDisks);
+        }
+      }
+
+      nextLevel() {
+        if (this.state.level < (this.state.maxDisks - this.state.minDisks + 1)) {
+          this.state.level++;
+          this.state.totalDisks++;
+          this.setupLevel(this.state.totalDisks);
+        }
+      }
+
+      setupEventListeners() {
+        // Mouse/touch events
+        this.dom.towers.forEach(tower => {
+          tower.addEventListener('dragover', e => e.preventDefault());
+          tower.addEventListener('drop', e => this.handleDrop(e));
+        });
+
+        document.addEventListener('dragstart', e => this.handleDragStart(e));
+        document.addEventListener('dragend', () => this.handleDragEnd());
+        
+        document.addEventListener('touchstart', e => this.handleTouchStart(e), { passive: false });
+        document.addEventListener('touchend', e => this.handleTouchEnd(e), { passive: false });
+        document.addEventListener('touchmove', e => {
+          if (this.state.selectedDisk) e.preventDefault();
+        }, { passive: false });        // Button events
+        this.dom.resetBtn.addEventListener('click', () => this.resetLevel());
+        this.dom.prevLevelBtn.addEventListener('click', () => this.prevLevel());
+        this.dom.nextLevelBtn.addEventListener('click', () => this.nextLevel());
+        this.dom.leaderboardBtn.addEventListener('click', () => this.displayLeaderboard());
+        this.dom.closeLeaderboardBtn.addEventListener('click', () => {
+          this.dom.leaderboardModal.style.display = 'none';
+        });
+
+        // Keyboard support
+        document.addEventListener('keydown', e => {
+          if (e.key === 'Escape') this.cleanupSelection();
+        });
+      }
+    }
+
+    // Initialize the game
+    new HanoiGame();
+  </script>
+</body>
+</html>
