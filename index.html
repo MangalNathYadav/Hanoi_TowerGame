@@ -1,0 +1,521 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Tower of Hanoi</title>
+  <style>
+    :root {
+      --disk-height: 22px;
+      --disk-min-width: 50px;
+      --tower-width: 30vw;
+      --tower-min-width: 100px;
+      --tower-max-width: 150px;
+      --primary-color: #4a89dc;
+      --highlight-color: #5d9cec;
+    }
+
+    * {
+      box-sizing: border-box;
+      touch-action: manipulation;
+    }
+
+    body {
+      margin: 0;
+      padding: 10px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #111;
+      color: white;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      margin: 10px 0 5px;
+      text-align: center;
+    }
+
+    .instructions {
+      text-align: center;
+      color: #aaa;
+      font-size: 0.9rem;
+      margin: 0 auto 15px;
+      max-width: 90%;
+    }
+
+    .game-info {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin: 0 auto 15px;
+      font-size: 0.95rem;
+      flex-wrap: wrap;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 0 auto 15px;
+      width: 100%;
+      max-width: 350px;
+    }
+
+    button {
+      background: var(--primary-color);
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      flex: 1;
+      min-width: 0;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button:active {
+      background: var(--highlight-color);
+    }
+
+    button:disabled {
+      background: #555;
+      cursor: not-allowed;
+    }
+
+    .game-area {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .tower-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 8px;
+      padding: 10px 5px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      flex-grow: 1;
+      min-height: 250px;
+    }
+
+    .tower-wrapper::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tower-container {
+        width: var(--tower-width);
+      min-width: var(--tower-min-width);
+      max-width: var(--tower-max-width);
+      background: #222;
+      border-radius: 8px;
+      padding: 10px 5px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      flex-shrink: 0;
+      height: 300px;
+      /* Add this to ensure proper flex layout */
+      justify-content: flex-end; /* Aligns content to bottom */
+     }
+
+    .tower-container::after {
+        content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 8px;
+      height: 90%; /* Adjust height as needed */
+      background: #555;
+      z-index: 0;
+    }
+
+    .disks-stack {
+        display: flex;
+      flex-direction: column-reverse;
+      align-items: center;
+      width: 100%;
+      position: relative;
+      z-index: 1;
+      /* Remove flex-grow and margin-top */
+      padding-bottom: 10px; /* Space from bottom */
+      min-height: fit-content; /* Only take space needed */
+    }
+
+    .disk {
+      height: var(--disk-height);
+      min-width: var(--disk-min-width);
+      margin: 1px 0; /* Reduce margin between disks */
+      background: linear-gradient(to right, hsl(${200 + i * 30}, 70%, 50%), hsl(${210 + i * 30}, 70%, 60%));
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: bold;
+      color: white;
+      text-shadow: 0 1px 1px rgba(0,0,0,0.3);
+      z-index: 2;
+      transition: transform 0.1s;
+      user-select: none;
+      cursor: grab;
+      position: relative;
+    }
+
+    .disk.selected {
+      transform: translateY(-10px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    }
+
+    .disk.dragging {
+      opacity: 0.9;
+    }
+
+    .tower-container.highlight {
+      background: #333;
+    }
+
+    .tower-container.invalid {
+      animation: shake 0.3s;
+      background: rgba(200, 0, 0, 0.2);
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+
+    /* Mobile-specific adjustments */
+    @media (max-width: 500px) {
+      :root {
+        --disk-height: 18px;
+        --disk-min-width: 40px;
+        --tower-width: 28vw;
+        --tower-min-width: 85px;
+      }
+
+      h1 {
+        font-size: 1.3rem;
+      }
+
+      .instructions {
+        font-size: 0.8rem;
+      }
+
+      .game-info {
+        font-size: 0.85rem;
+        gap: 10px;
+      }
+
+      .controls {
+        gap: 8px;
+      }
+
+      button {
+        padding: 7px 10px;
+        font-size: 0.85rem;
+      }
+
+      .disk {
+        font-size: 0.7rem;
+      }
+    }
+
+    @media (max-width: 350px) {
+      :root {
+        --tower-width: 26vw;
+        --tower-min-width: 75px;
+      }
+
+      .controls {
+        flex-wrap: wrap;
+      }
+
+      button {
+        min-width: 80px;
+      }
+    }
+  </style>
+</head>
+<body>
+    <img src="res/header.png" alt="">
+  <h1>Tower of Hanoi</h1>
+  <p class="instructions">Move all disks to the rightmost tower. Larger disks can't be placed on smaller ones.</p>
+  
+  <div class="game-info">
+    <div>Level: <span id="levelDisplay">1</span></div>
+    <div>Moves: <span id="moveCounter">0</span></div>
+    <div>Optimal: <span id="optimalMoves">7</span></div>
+  </div>
+  
+  <div class="controls">
+    <button id="resetBtn">Reset</button>
+    <button id="prevLevelBtn">← Level</button>
+    <button id="nextLevelBtn">Level →</button>
+  </div>
+  
+  <div class="game-area">
+    <div class="tower-wrapper">
+      <div class="tower-container" data-tower="1">
+        <div class="disks-stack"></div>
+      </div>
+      <div class="tower-container" data-tower="2">
+        <div class="disks-stack"></div>
+      </div>
+      <div class="tower-container" data-tower="3">
+        <div class="disks-stack"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    class HanoiGame {
+      constructor() {
+        this.state = {
+          selectedDisk: null,
+          selectedTower: null,
+          moveCount: 0,
+          level: 1,
+          minDisks: 3,
+          maxDisks: 8,
+          totalDisks: 3
+        };
+
+        this.dom = {
+          towers: document.querySelectorAll('.tower-container'),
+          moveCounter: document.getElementById('moveCounter'),
+          levelDisplay: document.getElementById('levelDisplay'),
+          optimalMoves: document.getElementById('optimalMoves'),
+          resetBtn: document.getElementById('resetBtn'),
+          prevLevelBtn: document.getElementById('prevLevelBtn'),
+          nextLevelBtn: document.getElementById('nextLevelBtn')
+        };
+
+        this.init();
+      }
+
+      init() {
+        this.setupLevel(this.state.totalDisks);
+        this.setupEventListeners();
+      }
+
+      setupLevel(n) {
+        n = Math.max(this.state.minDisks, Math.min(this.state.maxDisks, n));
+        this.state.totalDisks = n;
+        this.state.moveCount = 0;
+        this.state.selectedDisk = null;
+        this.state.selectedTower = null;
+
+        const [towerA, towerB, towerC] = Array.from(this.dom.towers).map(t => t.querySelector('.disks-stack'));
+        [towerA, towerB, towerC].forEach(t => t.innerHTML = '');
+
+        for (let i = n; i >= 1; i--) {
+          const disk = document.createElement('div');
+          disk.className = 'disk';
+          disk.dataset.size = i;
+          disk.style.width = `${40 + i * 12}px`;
+          disk.style.background = `linear-gradient(to right, hsl(${200 + i * 30}, 70%, 50%), hsl(${210 + i * 30}, 70%, 60%))`;
+          disk.textContent = i;
+          disk.draggable = true;
+          towerA.appendChild(disk);
+        }
+
+        this.updateUI();
+      }
+
+      updateUI() {
+        this.dom.moveCounter.textContent = this.state.moveCount;
+        this.dom.levelDisplay.textContent = this.state.level;
+        this.dom.optimalMoves.textContent = Math.pow(2, this.state.totalDisks) - 1;
+        
+        this.dom.prevLevelBtn.disabled = this.state.level <= 1;
+        this.dom.nextLevelBtn.disabled = this.state.level >= (this.state.maxDisks - this.state.minDisks + 1);
+      }
+
+      isValidMove(disk, targetTower) {
+        if (this.state.selectedTower === targetTower) return false;
+        const stack = targetTower.querySelector('.disks-stack');
+        const topDisk = stack.lastElementChild;
+        return !topDisk || parseInt(disk.dataset.size) < parseInt(topDisk.dataset.size);
+      }
+
+      handleDragStart(e) {
+        const disk = e.target;
+        if (!disk.classList.contains('disk')) return;
+        
+        const stack = disk.parentElement;
+        if (disk !== stack.lastElementChild) {
+          e.preventDefault();
+          return;
+        }
+        
+        this.state.selectedDisk = disk;
+        this.state.selectedTower = stack.parentElement;
+        disk.classList.add('dragging', 'selected');
+        
+        this.highlightValidTowers();
+        e.dataTransfer.setData('text/plain', disk.dataset.size);
+        e.dataTransfer.effectAllowed = 'move';
+      }
+
+      handleTouchStart(e) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const element = document.elementFromPoint(touch.clientX, touch.clientY);
+        
+        if (!element.classList.contains('disk')) return;
+        
+        const disk = element;
+        const stack = disk.parentElement;
+        if (disk !== stack.lastElementChild) return;
+        
+        this.state.selectedDisk = disk;
+        this.state.selectedTower = stack.parentElement;
+        disk.classList.add('selected');
+        
+        this.highlightValidTowers();
+      }
+
+      highlightValidTowers() {
+        this.dom.towers.forEach(t => {
+          t.classList.toggle('highlight', 
+            t !== this.state.selectedTower && 
+            this.isValidMove(this.state.selectedDisk, t)
+          );
+        });
+      }
+
+      handleDragEnd() {
+        this.cleanupSelection();
+      }
+
+      handleTouchEnd(e) {
+        if (!this.state.selectedDisk) return;
+        
+        const touch = e.changedTouches[0];
+        const element = document.elementFromPoint(touch.clientX, touch.clientY);
+        const targetTower = element.closest('.tower-container');
+        
+        if (!targetTower || targetTower === this.state.selectedTower) {
+          this.cleanupSelection();
+          return;
+        }
+
+        this.processMove(targetTower);
+      }
+
+      handleDrop(e) {
+        e.preventDefault();
+        if (!this.state.selectedDisk) return;
+        
+        const targetTower = e.currentTarget;
+        this.processMove(targetTower);
+      }
+
+      processMove(targetTower) {
+        if (!this.isValidMove(this.state.selectedDisk, targetTower)) {
+          targetTower.classList.add('invalid');
+          setTimeout(() => {
+            targetTower.classList.remove('invalid');
+            this.cleanupSelection();
+          }, 300);
+          return;
+        }
+
+        const stack = targetTower.querySelector('.disks-stack');
+        stack.appendChild(this.state.selectedDisk);
+        this.state.moveCount++;
+        this.updateUI();
+        this.cleanupSelection();
+        this.checkWin();
+      }
+
+      cleanupSelection() {
+        if (this.state.selectedDisk) {
+          this.state.selectedDisk.classList.remove('dragging', 'selected');
+          this.state.selectedDisk = null;
+        }
+        this.state.selectedTower = null;
+        this.dom.towers.forEach(t => t.classList.remove('highlight', 'invalid'));
+      }
+
+      checkWin() {
+        const lastStack = this.dom.towers[2].querySelector('.disks-stack');
+        if (lastStack.children.length === this.state.totalDisks) {
+          setTimeout(() => {
+            const optimal = Math.pow(2, this.state.totalDisks) - 1;
+            const efficiency = Math.round((optimal / this.state.moveCount) * 100);
+            
+            if (confirm(`You won Level ${this.state.level} in ${this.state.moveCount} moves!\n` +
+                       `Optimal moves: ${optimal}\n` +
+                       `Efficiency: ${efficiency}%\n\n` +
+                       `Go to next level?`)) {
+              this.nextLevel();
+            }
+          }, 300);
+        }
+      }
+
+      resetLevel() {
+        this.setupLevel(this.state.totalDisks);
+      }
+
+      prevLevel() {
+        if (this.state.level > 1) {
+          this.state.level--;
+          this.state.totalDisks--;
+          this.setupLevel(this.state.totalDisks);
+        }
+      }
+
+      nextLevel() {
+        if (this.state.level < (this.state.maxDisks - this.state.minDisks + 1)) {
+          this.state.level++;
+          this.state.totalDisks++;
+          this.setupLevel(this.state.totalDisks);
+        }
+      }
+
+      setupEventListeners() {
+        // Mouse/touch events
+        this.dom.towers.forEach(tower => {
+          tower.addEventListener('dragover', e => e.preventDefault());
+          tower.addEventListener('drop', e => this.handleDrop(e));
+        });
+
+        document.addEventListener('dragstart', e => this.handleDragStart(e));
+        document.addEventListener('dragend', () => this.handleDragEnd());
+        
+        document.addEventListener('touchstart', e => this.handleTouchStart(e), { passive: false });
+        document.addEventListener('touchend', e => this.handleTouchEnd(e), { passive: false });
+        document.addEventListener('touchmove', e => {
+          if (this.state.selectedDisk) e.preventDefault();
+        }, { passive: false });
+
+        // Button events
+        this.dom.resetBtn.addEventListener('click', () => this.resetLevel());
+        this.dom.prevLevelBtn.addEventListener('click', () => this.prevLevel());
+        this.dom.nextLevelBtn.addEventListener('click', () => this.nextLevel());
+
+        // Keyboard support
+        document.addEventListener('keydown', e => {
+          if (e.key === 'Escape') this.cleanupSelection();
+        });
+      }
+    }
+
+    // Initialize the game
+    new HanoiGame();
+  </script>
+</body>
+</html>
