@@ -1105,8 +1105,7 @@
       validateDOM() {
         const criticalElements = ['loadingScreen', 'homeScreen', 'gameScreen', 'loadingBar', 'loadingProgress'];
         return criticalElements.every(id => this.dom[id] !== null);
-      }
-      init() {
+      }      init() {
         if (this.state.initialized) {
           console.warn('Game already initialized');
           return;
@@ -1115,26 +1114,34 @@
         // Hide all screens first
         this.hideAllModalsAndScreens();
         
-        // Show loading screen
+        // Show loading screen immediately
         if (this.dom.loadingScreen) {
           this.dom.loadingScreen.style.display = 'flex';
+          // Force a reflow to ensure display change takes effect
+          this.dom.loadingScreen.offsetHeight;
         }
 
-        try {
-          // Load saved data
-          this.state.playerName = this.loadPlayerName();
-          this.state.progress = this.loadProgress();
+        // Wait for a brief moment to ensure loading screen is visible
+        setTimeout(() => {
+          try {
+            // Load saved data
+            this.state.playerName = this.loadPlayerName();
+            this.state.progress = this.loadProgress();
 
-          // Start the loading sequence
-          this.startLoadingSequence();
-        } catch (error) {
-          console.error('Error during initialization:', error);
-          // Show error state
-          if (this.dom.loadingProgress) {
-            this.dom.loadingProgress.textContent = 'Error loading game';
+            // Start the loading sequence
+            this.startLoadingSequence();
+          } catch (error) {
+            console.error('Error during initialization:', error);
+            // Show error state
+            if (this.dom.loadingProgress) {
+              this.dom.loadingProgress.textContent = 'Error loading game';
+              
+              // Even on error, we should continue to home screen after a delay
+              setTimeout(() => this.finishLoading(), 1000);
+            }
           }
-        }
-      }      startLoadingSequence() {
+        }, 100);
+      }startLoadingSequence() {
         // Stop any existing interval to prevent multiple intervals running
         if (this.state.loadingInterval) {
           clearInterval(this.state.loadingInterval);
@@ -1233,8 +1240,6 @@
         }, 30);
       }      finishLoading() {
         try {
-          console.log("Finishing loading sequence");
-          
           // First ensure loading screen and intervals are cleaned up
           if (this.state.loadingInterval) {
             clearInterval(this.state.loadingInterval);
@@ -1245,40 +1250,71 @@
           this.state.loading = false;
           this.state.initialized = true;
 
-          // Hide ALL screens and modals to start with a clean slate
-          this.hideAllModalsAndScreens();
-
-          // Load player data and progress if needed
+          // Ensure both screen setups before hiding loading screen
+          // This ensures the next screen is ready to be shown
           if (!this.state.playerName) {
-            this.state.playerName = this.loadPlayerName();
-          }
-          
-          if (!this.state.progress || !this.state.progress.highestLevel) {
-            this.state.progress = this.loadProgress();
-          }
-
-          // Determine which screen to show based on player state
-          if (!this.state.playerName) {
-            console.log("No player name found, showing welcome modal");
-            this.showWelcomeModal();
+            // Setup welcome modal elements
+            if (this.dom.welcomeModal && this.dom.playerNameInput && this.dom.startGameBtn) {
+              // Reset input field
+              this.dom.playerNameInput.value = '';
+              
+              // Remove existing event listeners by cloning
+              const newInput = this.dom.playerNameInput.cloneNode(true);
+              const newStartButton = this.dom.startGameBtn.cloneNode(true);
+              
+              // Replace elements
+              this.dom.playerNameInput.parentNode.replaceChild(newInput, this.dom.playerNameInput);
+              this.dom.startGameBtn.parentNode.replaceChild(newStartButton, this.dom.startGameBtn);
+              
+              // Update references
+              this.dom.playerNameInput = newInput;
+              this.dom.startGameBtn = newStartButton;
+              
+              // Set up event listeners
+              this.dom.playerNameInput.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') this.handleStartGame();
+              });
+              
+              this.dom.startGameBtn.addEventListener('click', () => {
+                this.handleStartGame();
+              });
+            }
           } else {
-            console.log("Player found:", this.state.playerName, "showing home screen");
-            // Force screen transitions to be synchronous
-            this.dom.homeScreen.style.display = 'flex';
-            // Force a reflow to ensure the display change takes effect
-            this.dom.homeScreen.offsetHeight;
-            // Update state
-            this.state.currentScreen = 'home';
-            // Update displays
-            this.updatePlayerNameDisplay();
-            // Set up event listeners for home screen
+            // Setup home screen event listeners
             this.setupHomeEventListeners();
           }
+
+          // Now hide loading screen
+          this.hideAllModalsAndScreens();
+          
+          // And finally show appropriate screen with a small delay to ensure smooth transition
+          setTimeout(() => {
+            if (!this.state.playerName) {
+              if (this.dom.welcomeModal) {
+                this.dom.welcomeModal.style.display = 'block';
+                // Focus on input field
+                if (this.dom.playerNameInput) this.dom.playerNameInput.focus();
+              }
+            } else {
+              if (this.dom.homeScreen) {
+                this.dom.homeScreen.style.display = 'flex';
+                // Update player name
+                if (this.dom.homePlayerName) {
+                  this.dom.homePlayerName.textContent = this.state.playerName;
+                }
+              }
+            }
+            
+            // Update state
+            this.state.currentScreen = !this.state.playerName ? 'welcome' : 'home';
+          }, 50);
         } catch (error) {
           console.error('Error in finishLoading:', error);
           // Show welcome modal as fallback
           this.hideAllModalsAndScreens();
-          this.showWelcomeModal();
+          setTimeout(() => {
+            if (this.dom.welcomeModal) this.dom.welcomeModal.style.display = 'block';
+          }, 100);
         }
       }
 
@@ -1373,29 +1409,69 @@
         this.dom.levelsBtn = newLevelsBtn;
         this.dom.homeLeaderboardBtn = newLeaderboardBtn;
         this.dom.changePlayerHomeBtn = newChangePlayerBtn;
-        // Add new event listeners with sound and modal/screen hiding
+        
+        // Add play button listener
         this.dom.playBtn.addEventListener('click', () => {
-          this.playSound(this.dom.selectSound);
-          this.hideAllModalsAndScreens();
-          this.showGameScreen();
-          this.setupLevel(this.state.totalDisks);
+          try {
+            this.playSound(this.dom.selectSound);
+            this.hideAllModalsAndScreens();
+            this.showGameScreen();
+            if (typeof this.setupLevel === 'function') {
+              this.setupLevel(this.state.totalDisks);
+            } else {
+              console.error('setupLevel method not found');
+            }
+          } catch (error) {
+            console.error('Error in play button handler:', error);
+          }
         });
+        
+        // Add levels button listener
         this.dom.levelsBtn.addEventListener('click', () => {
-          this.playSound(this.dom.selectSound);
-          this.hideAllModalsAndScreens();
-          this.showLevelSelectionModal();
+          try {
+            this.playSound(this.dom.selectSound);
+            this.hideAllModalsAndScreens();
+            this.showLevelSelectionModal();
+          } catch (error) {
+            console.error('Error in levels button handler:', error);
+          }
         });
+        
+        // Add leaderboard button listener
         this.dom.homeLeaderboardBtn.addEventListener('click', () => {
-          this.playSound(this.dom.selectSound);
-          this.hideAllModalsAndScreens();
-          this.displayLeaderboard();
+          try {
+            this.playSound(this.dom.selectSound);
+            this.hideAllModalsAndScreens();
+            if (typeof this.displayLeaderboard === 'function') {
+              this.displayLeaderboard();
+            } else {
+              console.error('displayLeaderboard method not found');
+              // Fallback to just showing the leaderboard modal
+              if (this.dom.leaderboardModal) {
+                this.dom.leaderboardModal.style.display = 'block';
+              }
+            }
+          } catch (error) {
+            console.error('Error in leaderboard button handler:', error);
+          }
         });
+        
+        // Add change player button listener
         this.dom.changePlayerHomeBtn.addEventListener('click', () => {
-          this.hideAllModalsAndScreens();
-          localStorage.removeItem('hanoiPlayerName');
-          this.state.playerName = '';
-          this.showWelcomeModal();
+          try {
+            this.playSound(this.dom.selectSound);
+            this.hideAllModalsAndScreens();
+            localStorage.removeItem('hanoiPlayerName');
+            this.state.playerName = '';
+            this.showWelcomeModal();
+          } catch (error) {
+            console.error('Error in change player button handler:', error);
+          }
         });
+        
+        // Ensure all other game buttons work too
+        this.setupCommonGameButtons();
+      }
         
         // Game screen buttons
         this.dom.backToHomeBtn.addEventListener('click', () => {
