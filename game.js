@@ -84,12 +84,12 @@ class HanoiGame {
     // Loading screen elements
     this.dom.loadingBar = document.getElementById('loadingBar');
     this.dom.loadingProgress = document.getElementById('loadingProgress');
-    
-    // Home screen elements
+      // Home screen elements
     this.dom.homePlayerName = document.getElementById('homePlayerName');
     this.dom.playBtn = document.getElementById('playBtn');
     this.dom.levelsBtn = document.getElementById('levelsBtn');
     this.dom.homeLeaderboardBtn = document.getElementById('homeLeaderboardBtn');
+    this.dom.homeSoundToggleBtn = document.getElementById('homeSoundToggleBtn');
     this.dom.changePlayerHomeBtn = document.getElementById('changePlayerHomeBtn');
     
     // Game screen elements
@@ -167,8 +167,7 @@ class HanoiGame {
       // Load player name
       const storedName = localStorage.getItem('hanoiPlayerName');
       if (storedName) {
-        this.state.playerName = storedName;
-      }
+        this.state.playerName = storedName;      }
       
       // Load progress
       const progress = localStorage.getItem('hanoiProgress');
@@ -180,6 +179,12 @@ class HanoiGame {
       const highScores = localStorage.getItem('hanoiHighScores');
       if (highScores) {
         this.state.highScores = JSON.parse(highScores);
+      }
+      
+      // Load sound preference
+      const soundEnabled = localStorage.getItem('hanoiSoundEnabled');
+      if (soundEnabled !== null) {
+        this.state.soundEnabled = soundEnabled === 'true';
       }
       
       console.log('Game data loaded successfully');
@@ -292,6 +297,8 @@ class HanoiGame {
     // Play button
     this.safeAddEventListener(this.dom.playBtn, 'click', () => {
       this.playSound(this.dom.selectSound);
+      this.state.level = 1;
+      this.state.totalDisks = this.config.minDisks;
       this.showGameScreen();
       this.setupLevel(this.state.totalDisks);
     });
@@ -308,20 +315,16 @@ class HanoiGame {
       this.showLeaderboardModal();
     });
     
-    // Change player button
-    this.safeAddEventListener(this.dom.changePlayerHomeBtn, 'click', () => {
-      localStorage.removeItem('hanoiPlayerName');
-      this.state.playerName = '';
-      this.showWelcomeModal();
+    // Home sound toggle button
+    this.safeAddEventListener(this.dom.homeSoundToggleBtn, 'click', () => {
+      this.toggleSound();
     });
     
-    // Back to home button (game screen)
-    if (this.dom.backToHomeBtn) {
-      this.safeAddEventListener(this.dom.backToHomeBtn, 'click', () => {
-        this.stopTimer();
-        this.showHomeScreen();
-      });
-    }
+    // Change player button
+    this.safeAddEventListener(this.dom.changePlayerHomeBtn, 'click', () => {
+      this.playSound(this.dom.selectSound);
+      this.showWelcomeModal();
+    });
   }
 
   /**
@@ -573,16 +576,16 @@ class HanoiGame {
       { start: '#3f51b5', end: '#9fa8da' }, // Indigo
       { start: '#009688', end: '#80cbc4' }  // Teal
     ];
-    
-    // Create disks from largest to smallest
+      // Create disks from largest to smallest
     for (let i = disks; i >= 1; i--) {
       const disk = document.createElement('div');
       disk.className = 'disk';
       disk.dataset.size = i;
       
-      // Disk width based on size
-      const widthPercent = 40 + (i * 12);
-      disk.style.width = `${widthPercent}px`;
+      // Disk width based on size - Fixed calculation
+      // Use percentage to make it responsive
+      const widthPercent = 50 + (i * 10);
+      disk.style.width = `${widthPercent}%`;
       
       // Disk color from palette
       const colorIndex = (i - 1) % colors.length;
@@ -1060,15 +1063,24 @@ class HanoiGame {
   resetLevel() {
     this.setupLevel(this.state.totalDisks);
   }
-
   /**
    * Toggle sound on/off
    */
   toggleSound() {
     this.state.soundEnabled = !this.state.soundEnabled;
+    
+    // Update game screen button
     if (this.dom.soundToggleBtn) {
       this.dom.soundToggleBtn.textContent = this.state.soundEnabled ? '🔊' : '🔇';
     }
+    
+    // Update home screen button
+    if (this.dom.homeSoundToggleBtn) {
+      this.dom.homeSoundToggleBtn.textContent = this.state.soundEnabled ? '🔊 Sound' : '🔇 Sound';
+    }
+    
+    // Save sound preference
+    localStorage.setItem('hanoiSoundEnabled', this.state.soundEnabled);
   }
 
   /**
