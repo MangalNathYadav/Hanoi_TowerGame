@@ -91,8 +91,7 @@ class HanoiGame {
     this.dom.homeLeaderboardBtn = document.getElementById('homeLeaderboardBtn');
     this.dom.homeSoundToggleBtn = document.getElementById('homeSoundToggleBtn');
     this.dom.changePlayerHomeBtn = document.getElementById('changePlayerHomeBtn');
-    
-    // Game screen elements
+      // Game screen elements
     this.dom.backToHomeBtn = document.getElementById('backToHomeBtn');
     this.dom.gameOptionsBtn = document.getElementById('gameOptionsBtn');
     this.dom.towers = document.querySelectorAll('.tower-container');
@@ -102,10 +101,9 @@ class HanoiGame {
     this.dom.timer = document.getElementById('timer');
     this.dom.resetBtn = document.getElementById('resetBtn');
     this.dom.undoBtn = document.getElementById('undoBtn');
-    this.dom.soundToggleBtn = document.getElementById('soundToggleBtn');
+    // No sound button in game screen as requested
     this.dom.prevLevelBtn = document.getElementById('prevLevelBtn');
     this.dom.nextLevelBtn = document.getElementById('nextLevelBtn');
-    this.dom.leaderboardBtn = document.getElementById('leaderboardBtn');
     
     // Modals
     this.dom.welcomeModal = document.getElementById('welcomeModal');
@@ -358,7 +356,6 @@ class HanoiGame {
     this.safeAddEventListener(this.dom.undoBtn, 'click', () => this.undoMove());
     this.safeAddEventListener(this.dom.prevLevelBtn, 'click', () => this.prevLevel());
     this.safeAddEventListener(this.dom.nextLevelBtn, 'click', () => this.nextLevel());
-    this.safeAddEventListener(this.dom.soundToggleBtn, 'click', () => this.toggleSound());
     this.safeAddEventListener(this.dom.leaderboardBtn, 'click', () => this.showLeaderboardModal());
     
     // Add touch support
@@ -575,21 +572,30 @@ class HanoiGame {
       { start: '#9c27b0', end: '#ce93d8' }, // Purple
       { start: '#3f51b5', end: '#9fa8da' }, // Indigo
       { start: '#009688', end: '#80cbc4' }  // Teal
-    ];
-      // Create disks from largest to smallest
+    ];    // Create disks from largest to smallest
     for (let i = disks; i >= 1; i--) {
       const disk = document.createElement('div');
       disk.className = 'disk';
       disk.dataset.size = i;
       
-      // Disk width based on size - Fixed calculation
-      // Use percentage to make it responsive
-      const widthPercent = 50 + (i * 10);
-      disk.style.width = `${widthPercent}%`;
+      // Improved width calculation for better visual representation
+      // Smallest disk will be 45% width, largest will be 90%
+      const minWidth = 45;
+      const maxWidth = 90;
+      const widthStep = (maxWidth - minWidth) / (disks - 1 || 1);
+      const diskWidth = minWidth + ((i - 1) * widthStep);
       
-      // Disk color from palette
+      disk.style.width = `${diskWidth}%`;
+      
+      // Standard height for all disks with consistent stacking
+      disk.style.height = "22px";
+      
+      // Disk color from palette - brighter, more visually appealing colors
       const colorIndex = (i - 1) % colors.length;
       disk.style.background = `linear-gradient(to right, ${colors[colorIndex].start}, ${colors[colorIndex].end})`;
+      
+      // Add subtle shadow for better depth perception
+      disk.style.boxShadow = "0 2px 4px rgba(0,0,0,0.3)";
       
       // Add disk number
       disk.textContent = i;
@@ -638,9 +644,7 @@ class HanoiGame {
     if (this.dom.undoBtn) {
       this.dom.undoBtn.disabled = this.state.moveHistory.length === 0;
     }
-  }
-
-  /**
+  }  /**
    * Handle drag start event
    */
   handleDragStart(e) {
@@ -654,13 +658,55 @@ class HanoiGame {
       return;
     }
     
+    // Play sound effect when picking up a disk
+    this.playSound(this.dom.selectSound);
+    
     this.state.selectedDisk = disk;
     this.state.selectedTower = stack.parentElement;
-    disk.classList.add('dragging', 'selected');
     
+    // Add visual feedback classes
+    disk.classList.add('dragging');
+    disk.classList.add('selected');
+    
+    // For better touch device support - store the original position
+    this.state.dragStartX = e.clientX || e.touches?.[0]?.clientX;
+    this.state.dragStartY = e.clientY || e.touches?.[0]?.clientY;
+    
+    // Create a better drag image for improved user experience
+    try {
+      // Make the original disk semi-transparent during drag
+      disk.style.opacity = "0.6";
+      
+      // Set an improved drag image that follows the cursor naturally
+      if (e.dataTransfer) {
+        const ghostImage = disk.cloneNode(true);
+        ghostImage.style.width = disk.offsetWidth + "px";
+        ghostImage.style.height = disk.offsetHeight + "px";
+        ghostImage.style.opacity = "0.7"; // More visible than before
+        ghostImage.style.position = "absolute";
+        ghostImage.style.top = "-1000px";
+        ghostImage.style.boxShadow = "0 4px 8px rgba(0,0,0,0.5)"; // Enhanced shadow
+        document.body.appendChild(ghostImage);
+        
+        // Position the drag image better relative to cursor
+        e.dataTransfer.setDragImage(ghostImage, ghostImage.offsetWidth / 2, 10);
+        
+        setTimeout(() => {
+          document.body.removeChild(ghostImage);
+        }, 0);
+      }
+    } catch (err) {
+      // Fallback if custom drag image fails
+      console.log("Drag image creation failed, using default", err);
+    }
+    
+    // Highlight valid destination towers
     this.highlightValidTowers();
-    e.dataTransfer.setData('text/plain', disk.dataset.size);
-    e.dataTransfer.effectAllowed = 'move';
+    
+    if (e.dataTransfer) {
+      e.dataTransfer.setData('text/plain', disk.dataset.size);
+      e.dataTransfer.effectAllowed = 'move';
+    }
   }
 
   /**
@@ -748,20 +794,27 @@ class HanoiGame {
    * Highlight valid towers for move
    */
   highlightValidTowers() {
-    if (!this.dom.towers) return;
+    if (!this.dom.towers || !this.state.selectedDisk) return;
     
     this.dom.towers.forEach(tower => {
-      const isValid = tower !== this.state.selectedTower && 
+      // Only highlight towers that aren't the source and are valid targets
+      const isValidTarget = tower !== this.state.selectedTower && 
                      this.isValidMove(this.state.selectedDisk, tower);
       
-      tower.classList.toggle('highlight', isValid);
+      // Add or remove highlight class as appropriate
+      tower.classList.toggle('highlight', isValidTarget);
+      
+      // Add subtle animation to valid target towers to draw attention
+      if (isValidTarget) {
+        tower.style.transition = 'all 0.3s ease';
+      }
     });
   }
-
   /**
-   * Check if a move is valid
+   * Check if a move is valid according to Tower of Hanoi rules
    */
   isValidMove(disk, targetTower) {
+    // If no disk selected or trying to place on same tower, move is invalid
     if (!disk || !targetTower || this.state.selectedTower === targetTower) return false;
     
     const stack = targetTower.querySelector('.disks-stack');
@@ -769,22 +822,40 @@ class HanoiGame {
     
     const topDisk = stack.lastElementChild;
     
-    // Can move if tower is empty or selected disk is smaller than top disk
-    return !topDisk || parseInt(disk.dataset.size) < parseInt(topDisk.dataset.size);
-  }
-
-  /**
+    // Get the size of the disk being moved (lower number = smaller disk)
+    const movingDiskSize = parseInt(disk.dataset.size);
+    
+    // Tower is empty, move is valid
+    if (!topDisk) return true;
+    
+    // Get the size of the top disk on the target tower
+    const topDiskSize = parseInt(topDisk.dataset.size);
+    
+    // Move is valid only if the moving disk is smaller than the top disk
+    return movingDiskSize < topDiskSize;
+  }/**
    * Process a disk move
    */
   processMove(targetTower) {
     if (!this.state.selectedDisk || !targetTower) return;
     
+    // Ensure the move follows game rules
     if (!this.isValidMove(this.state.selectedDisk, targetTower)) {
-      // Show invalid move animation
+      // Visual feedback for invalid move
       targetTower.classList.add('invalid');
+      
+      // Play error sound
+      const errorSound = new Audio('res/select.mp3');
+      if (this.state.soundEnabled) {
+        errorSound.volume = 0.3;
+        errorSound.play().catch(err => {});
+      }
+      
+      // Remove invalid status after animation completes
       setTimeout(() => {
         targetTower.classList.remove('invalid');
-      }, 300);
+      }, 400);
+      
       this.cleanupSelection();
       return;
     }
@@ -804,43 +875,61 @@ class HanoiGame {
       from: fromTower.dataset.tower,
       to: targetTower.dataset.tower
     });
-    
-    // Enable undo button
+      // Enable undo button
     if (this.dom.undoBtn) {
       this.dom.undoBtn.disabled = false;
     }
     
-    // Play sound effect
-    this.playSound(this.dom.moveSound);
+    // Add transition animation class to disk
+    disk.classList.add('moving');
     
-    // Move the disk
+    // Move the disk with an improved animation sequence
     const stack = targetTower.querySelector('.disks-stack');
-    stack.appendChild(this.state.selectedDisk);
     
-    // Update move counter and UI
-    this.state.moveCount++;
-    this.updateUI();
+    // Create smoother animation
+    setTimeout(() => {
+      // Play sound effect when dropping the disk
+      this.playSound(this.dom.moveSound);
+      
+      // Position the disk in the new tower
+      stack.appendChild(disk);
+      
+      // Clear animation class after transition completes
+      setTimeout(() => {
+        disk.classList.remove('moving');
+      }, 300);
+      
+      // Update move counter and UI
+      this.state.moveCount++;
+      this.updateUI();
+      
+      // Check if the player has won after the movement animation
+      setTimeout(() => {
+        this.checkWin();
+      }, 400);
+    }, 100);
+    
     this.cleanupSelection();
-    
-    // Check if the player has won
-    this.checkWin();
   }
 
   /**
    * Clean up after a disk selection or move
    */
   cleanupSelection() {
+    // Remove classes from the selected disk
     if (this.state.selectedDisk) {
       this.state.selectedDisk.classList.remove('dragging', 'selected');
+      this.state.selectedDisk.style.opacity = '1'; // Reset opacity
       this.state.selectedDisk = null;
     }
     
     this.state.selectedTower = null;
     
-    // Remove highlights from towers
+    // Remove highlights and cleanup all towers
     if (this.dom.towers) {
       this.dom.towers.forEach(tower => {
         tower.classList.remove('highlight', 'invalid');
+        tower.style.transition = ''; // Reset any transition effects
       });
     }
   }
@@ -1062,16 +1151,15 @@ class HanoiGame {
    */
   resetLevel() {
     this.setupLevel(this.state.totalDisks);
-  }
-  /**
+  }  /**
    * Toggle sound on/off
    */
   toggleSound() {
     this.state.soundEnabled = !this.state.soundEnabled;
     
-    // Update game screen button
-    if (this.dom.soundToggleBtn) {
-      this.dom.soundToggleBtn.textContent = this.state.soundEnabled ? '🔊' : '🔇';
+    // Play a test sound when turning ON
+    if (this.state.soundEnabled) {
+      this.playSound(this.dom.selectSound);
     }
     
     // Update home screen button

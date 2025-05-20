@@ -149,6 +149,7 @@
       padding: 10px;
       display: flex;
       flex-direction: column;
+      background: linear-gradient(to bottom, #121212, #1a1a1a);
     }
     
     .game-header {
@@ -156,97 +157,197 @@
       justify-content: space-between;
       align-items: center;
       margin-bottom: 10px;
-    }
-    
-    .icon-btn {
-      background: none;
-      border: none;
-      color: var(--text-primary);
-      font-size: 1rem;
-      cursor: pointer;
       padding: 5px 10px;
-    }
-    
-    .icon-btn:hover {
-      color: var(--highlight-color);
+      background: rgba(0,0,0,0.3);
+      border-radius: 8px;
     }
 
-    .game-area {
+    .instructions-panel {
+      background: rgba(0,0,0,0.2);
+      padding: 10px;
+      border-radius: 8px;
+      margin: 5px 0;
+      text-align: center;
+    }
+    
+    .instructions {
+      color: #e0e0e0;
+      font-size: 0.95rem;
+      margin: 0;
+    }
+    
+    .game-info {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 15px;
+      padding: 10px;
+      margin: 10px auto;
+      background: rgba(0,0,0,0.2);
+      border-radius: 8px;
+      max-width: 600px;
+    }
+
+    .info-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 70px;
+      padding: 5px 10px;
+      border-radius: 5px;
+      background: rgba(255,255,255,0.05);
+    }
+
+    .info-label {
+      font-size: 0.8rem;
+      color: #aaaaaa;
+      margin-bottom: 2px;
+    }
+
+    .info-value {
+      font-size: 1.1rem;
+      font-weight: bold;
+    }
+
+    .moves .info-value {
+      color: #ff9800;
+    }
+
+    .timer .info-value {
+      color: #2196F3;
+    }
+
+    .level .info-value {
+      color: #4caf50;
+    }    .game-area {
       width: 100%;
-      padding: 2rem;
+      padding: 15px;
       display: flex;
       justify-content: center;
       align-items: flex-end;
+      flex: 1;
+      margin-top: 15px;
+      min-height: 250px; /* Ensure minimum height for the game area */
     }
 
     .tower-wrapper {
       display: flex;
       justify-content: space-around;
       width: 100%;
-      max-width: 800px;
-      height: 300px;
-    }
-
-    .tower-container {
+      max-width: 500px;
+      height: 220px;
+      background: rgba(0,0,0,0.2);
+      padding: 0 15px 0 15px;
+      border-radius: 8px;
+      box-shadow: inset 0 0 15px rgba(0,0,0,0.3), 0 4px 8px rgba(0,0,0,0.2);
       position: relative;
-      width: 200px;
+      margin-bottom: 10px; /* Add some space at the bottom */
+    }
+    
+    /* Add floor line for better visual alignment */
+    .tower-wrapper::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 6px;
+      background: #5d4037;
+      border-radius: 0 0 8px 8px;
+    }.tower-container {
+      position: relative;
+      width: 30%;
+      max-width: 160px;
+      min-width: 100px;
       height: 100%;
       display: flex;
       flex-direction: column;
       align-items: center;
-    }
-
-    .tower-rod {
-      width: 20px;
-      height: 200px;
-      background: #795548;
-      border-radius: 4px;
-      margin-bottom: -10px;
+      justify-content: flex-end;
+      border-bottom: 6px solid #5d4037;
+      border-radius: 0 0 4px 4px;
+      padding-bottom: 6px; /* Add padding to ensure disks don't touch the floor */
+    }    .tower-rod {
+      position: absolute;
+      width: 16px;
+      height: 180px;
+      background: linear-gradient(to bottom, #8D6E63, #5D4037);
+      border-radius: 4px 4px 0 0;
+      bottom: 6px; /* Align with the border-bottom of tower-container */
+      left: 50%;
+      transform: translateX(-50%); /* Center the rod precisely */
+      z-index: 1;
+      box-shadow: 2px 2px 4px rgba(0,0,0,0.3);
     }
 
     .disks-stack {
+      position: relative;
       display: flex;
       flex-direction: column-reverse;
       align-items: center;
-      min-height: 200px;
       width: 100%;
-    }
-
-    .disk {
-      height: 30px;
+      margin-bottom: 0;
+      z-index: 2;
+    }    .disk {
+      height: 22px;
       background: linear-gradient(90deg, #2196F3, #03A9F4);
-      border-radius: 15px;
-      margin: 2px 0;
+      border-radius: 12px;
+      margin: 1px 0;
       display: flex;
       justify-content: center;
       align-items: center;
       color: white;
       font-weight: bold;
       cursor: grab;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+      user-select: none;
+      z-index: 2; /* Ensure disks appear above the tower rod */
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    
+    .disk:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+    }    .disk.moving {
       transition: all 0.3s ease;
     }
-
-    .disk.dragging {
-      opacity: 0.5;
-    }
-
+    
     .disk.selected {
-      transform: translateY(-10px);
-      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      transform: translateY(-12px);
+      box-shadow: 0 8px 16px rgba(0,0,0,0.35);
+      z-index: 20;
+      border: 2px solid rgba(255,255,255,0.4);
+    }    .tower-container.highlight {
+      background: rgba(76, 175, 80, 0.2);
+      border-bottom-color: #4caf50;
+      transition: all 0.3s ease;
+      animation: pulse 1.5s infinite;
+    }.tower-container.highlight::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      border-radius: 8px;
+      border: 3px dashed rgba(76, 175, 80, 0.7);
+      pointer-events: none;
+      animation: pulse 1.5s infinite alternate;
     }
-
-    .tower-container.highlight {
-      background: rgba(33, 150, 243, 0.1);
-    }
-
+    
     .tower-container.invalid {
-      animation: shake 0.3s;
+      animation: shake 0.4s;
+      background: rgba(244, 67, 54, 0.2);
+      border-bottom-color: #f44336;
     }
 
     @keyframes shake {
       0%, 100% { transform: translateX(0); }
-      25% { transform: translateX(-10px); }
-      75% { transform: translateX(10px); }
+      20% { transform: translateX(-10px); }
+      40% { transform: translateX(10px); }
+      60% { transform: translateX(-7px); }
+      80% { transform: translateX(7px); }
     }
 
     .logo {
@@ -495,18 +596,17 @@
       font-weight: bold;
       color: var(--highlight-color);
     }
-    
-    /* Animation effects */
+      /* Animation effects */
     @keyframes pulse {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-      100% { transform: scale(1); }
+      0% { transform: scale(1); opacity: 0.7; }
+      50% { transform: scale(1.02); opacity: 1; }
+      100% { transform: scale(1); opacity: 0.7; }
     }
     
     @keyframes glow {
-      0% { box-shadow: 0 0 5px rgba(93, 156, 236, 0.5); }
-      50% { box-shadow: 0 0 20px rgba(93, 156, 236, 0.8); }
-      100% { box-shadow: 0 0 5px rgba(93, 156, 236, 0.5); }
+      0% { box-shadow: 0 0 8px rgba(93, 156, 236, 0.6); }
+      50% { box-shadow: 0 0 20px rgba(93, 156, 236, 0.9); }
+      100% { box-shadow: 0 0 8px rgba(93, 156, 236, 0.6); }
     }
     
     .disk.win-animation {
@@ -745,31 +845,35 @@
       button {
         min-width: 80px;
       }
-    }
-
-    /* Game controls styling */
+    }    /* Game controls styling */
     .controls {
       display: flex;
       justify-content: center;
       gap: 10px;
-      margin: 15px 0;
+      margin: 10px auto;
       flex-wrap: wrap;
+      max-width: 400px;
+      padding: 6px;
+      background: rgba(0,0,0,0.15);
+      border-radius: 6px;
     }
     
     .controls button {
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(45, 45, 45, 0.9);
       color: white;
       border: none;
-      padding: 10px 15px;
-      border-radius: 6px;
+      padding: 8px 12px;
+      border-radius: 4px;
       font-size: 0.9rem;
       cursor: pointer;
       transition: all 0.2s ease;
       box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      min-width: 70px;
+      font-weight: 500;
     }
     
     .controls button:hover:not(:disabled) {
-      background: rgba(255, 255, 255, 0.2);
+      background: rgba(60, 60, 60, 0.95);
       transform: translateY(-2px);
       box-shadow: 0 4px 6px rgba(0,0,0,0.3);
     }
@@ -792,12 +896,30 @@
       background: linear-gradient(135deg, #ba68c8, #9c27b0);
     }
     
-    #soundToggleBtn {
-      background: linear-gradient(135deg, #ff9800, #ffc107);
+    #resetBtn {
+      background: linear-gradient(135deg, #f44336, #ef5350);
     }
     
-    #soundToggleBtn:hover {
-      background: linear-gradient(135deg, #ffc107, #ff9800);
+    #resetBtn:hover:not(:disabled) {
+      background: linear-gradient(135deg, #ef5350, #f44336);
+    }
+    
+    #prevLevelBtn, #nextLevelBtn {
+      background: linear-gradient(135deg, #2196F3, #64B5F6);
+    }
+    
+    #prevLevelBtn:hover:not(:disabled), #nextLevelBtn:hover:not(:disabled) {
+      background: linear-gradient(135deg, #64B5F6, #2196F3);
+    }
+    
+    @keyframes buttonPulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+    
+    .button-pulse {
+      animation: buttonPulse 0.3s;
     }
   </style>
 </head>
@@ -847,21 +969,36 @@
       <h1>Tower of Hanoi</h1>
       <button id="gameOptionsBtn" class="icon-btn">⚙️</button>
     </div>
-    
-    <p class="instructions">Move all disks to the rightmost tower. Larger disks can't be placed on smaller ones.</p>
+      <div class="instructions-panel">
+      <p class="instructions">Move all disks to the rightmost tower. Larger disks can't be placed on smaller ones.</p>
+    </div>
     
     <div class="game-info">
-      <div>Player: <span id="playerNameDisplay" class="highlight-text"></span></div>
-      <div>Level: <span id="levelDisplay">1</span></div>
-      <div>Moves: <span id="moveCounter">0</span></div>
-      <div>Optimal: <span id="optimalMoves">7</span></div>
-      <div>Time: <span id="timer">00:00</span></div>
-    </div>
-      <div class="controls">      <button id="resetBtn">Reset</button>
+      <div class="info-item player">
+        <div class="info-label">Player:</div>
+        <div class="info-value"><span id="playerNameDisplay" class="highlight-text"></span></div>
+      </div>
+      <div class="info-item level">
+        <div class="info-label">Level:</div>
+        <div class="info-value"><span id="levelDisplay">1</span></div>
+      </div>
+      <div class="info-item moves">
+        <div class="info-label">Moves:</div>
+        <div class="info-value"><span id="moveCounter">0</span></div>
+      </div>
+      <div class="info-item optimal">
+        <div class="info-label">Optimal:</div>
+        <div class="info-value"><span id="optimalMoves">7</span></div>
+      </div>
+      <div class="info-item timer">
+        <div class="info-label">Time:</div>
+        <div class="info-value"><span id="timer">00:00</span></div>
+      </div>
+    </div>      <div class="controls">
+      <button id="resetBtn">Reset</button>
       <button id="undoBtn" disabled>↩ Undo</button>
       <button id="prevLevelBtn">← Level</button>
       <button id="nextLevelBtn">Level →</button>
-      <button id="soundToggleBtn">🔊</button>
     </div>
     
     <div class="game-area">
