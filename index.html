@@ -992,9 +992,13 @@
   <audio id="selectSound" src="res/select.mp3" preload="auto"></audio>
   <audio id="winSound" src="res/win.mp3" preload="auto"></audio>
   <audio id="gameCompleteSound" src="res/game-complete.mp3" preload="auto"></audio>
-
   <script>    class HanoiGame {
       constructor() {
+        // For testing purposes, uncomment these to reset progress
+        // localStorage.removeItem('hanoiPlayerName');
+        // localStorage.removeItem('hanoiProgress');
+        // localStorage.removeItem('hanoiHighScores');
+        
         // Initialize state
         this.state = {
           initialized: false,
@@ -1014,7 +1018,8 @@
           progress: { highestLevel: 1, completedLevels: [] },
           currentScreen: 'loading',
           soundEnabled: true,
-          loadingInterval: null
+          loadingInterval: null,
+          moveHistory: []
         };
         
         // Initialize DOM references after document is ready
@@ -1121,26 +1126,32 @@
           this.dom.loadingScreen.offsetHeight;
         }
 
-        // Wait for a brief moment to ensure loading screen is visible
-        setTimeout(() => {
-          try {
-            // Load saved data
-            this.state.playerName = this.loadPlayerName();
-            this.state.progress = this.loadProgress();
-
-            // Start the loading sequence
-            this.startLoadingSequence();
-          } catch (error) {
-            console.error('Error during initialization:', error);
-            // Show error state
-            if (this.dom.loadingProgress) {
-              this.dom.loadingProgress.textContent = 'Error loading game';
-              
-              // Even on error, we should continue to home screen after a delay
-              setTimeout(() => this.finishLoading(), 1000);
-            }
+        try {
+          // Load saved data
+          this.state.playerName = this.loadPlayerName();
+          this.state.progress = this.loadProgress();
+          
+          // Load high scores
+          const highScores = localStorage.getItem('hanoiHighScores');
+          if (highScores) {
+            this.state.highScores = JSON.parse(highScores);
           }
-        }, 100);
+
+          // Start the loading sequence
+          this.startLoadingSequence();
+        } catch (error) {
+          console.error('Error during initialization:', error);
+          // Show error state
+          if (this.dom.loadingProgress) {
+            this.dom.loadingProgress.textContent = 'Error loading game';
+          }
+          
+          // Even on error, we should continue to welcome screen after a delay
+          setTimeout(() => {
+            this.state.initialized = true;
+            this.finishLoading();
+          }, 1000);
+        }
       }startLoadingSequence() {
         // Stop any existing interval to prevent multiple intervals running
         if (this.state.loadingInterval) {
@@ -1177,20 +1188,18 @@
               this.state.initialized = true;
               this.state.loading = false;
 
-              // Shorter pause at 100% for better user experience
+              // Brief pause at 100% then finish
               setTimeout(() => {
                 this.finishLoading();
-              }, 50);
+              }, 300);
             } else {
               // Increment progress with an acceleration curve for realistic loading feel
               const increment = progress < 70 ? 3 : 1.5; // Faster at start, slower near end
               progress = Math.min(100, progress + increment);
               
-              // Update loading UI with immediate rendering
+              // Update loading UI
               if (this.dom.loadingBar) {
                 this.dom.loadingBar.style.width = `${progress}%`;
-                // Force a reflow to ensure the animation shows
-                this.dom.loadingBar.offsetHeight;
               }
               if (this.dom.loadingProgress) {
                 this.dom.loadingProgress.textContent = `${Math.round(progress)}%`;
@@ -1202,16 +1211,19 @@
             clearInterval(this.state.loadingInterval);
             this.state.loadingInterval = null;
             
-            // Show error state
+            // Show error state and force completion
             if (this.dom.loadingProgress) {
               this.dom.loadingProgress.textContent = 'Error loading game';
             }
             
             // Force finishLoading after a brief delay to avoid getting stuck
-            setTimeout(() => this.finishLoading(), 300);
+            setTimeout(() => {
+              this.state.initialized = true;
+              this.finishLoading();
+            }, 1000);
           }
-        }, 20);
-      }      showLoadingScreen() {
+        }, 30);
+      }showLoadingScreen() {
         let progress = 0;
         const interval = setInterval(() => {
           if (progress >= 100) {
@@ -1409,69 +1421,29 @@
         this.dom.levelsBtn = newLevelsBtn;
         this.dom.homeLeaderboardBtn = newLeaderboardBtn;
         this.dom.changePlayerHomeBtn = newChangePlayerBtn;
-        
-        // Add play button listener
+        // Add new event listeners with sound and modal/screen hiding
         this.dom.playBtn.addEventListener('click', () => {
-          try {
-            this.playSound(this.dom.selectSound);
-            this.hideAllModalsAndScreens();
-            this.showGameScreen();
-            if (typeof this.setupLevel === 'function') {
-              this.setupLevel(this.state.totalDisks);
-            } else {
-              console.error('setupLevel method not found');
-            }
-          } catch (error) {
-            console.error('Error in play button handler:', error);
-          }
+          this.playSound(this.dom.selectSound);
+          this.hideAllModalsAndScreens();
+          this.showGameScreen();
+          this.setupLevel(this.state.totalDisks);
         });
-        
-        // Add levels button listener
         this.dom.levelsBtn.addEventListener('click', () => {
-          try {
-            this.playSound(this.dom.selectSound);
-            this.hideAllModalsAndScreens();
-            this.showLevelSelectionModal();
-          } catch (error) {
-            console.error('Error in levels button handler:', error);
-          }
+          this.playSound(this.dom.selectSound);
+          this.hideAllModalsAndScreens();
+          this.showLevelSelectionModal();
         });
-        
-        // Add leaderboard button listener
         this.dom.homeLeaderboardBtn.addEventListener('click', () => {
-          try {
-            this.playSound(this.dom.selectSound);
-            this.hideAllModalsAndScreens();
-            if (typeof this.displayLeaderboard === 'function') {
-              this.displayLeaderboard();
-            } else {
-              console.error('displayLeaderboard method not found');
-              // Fallback to just showing the leaderboard modal
-              if (this.dom.leaderboardModal) {
-                this.dom.leaderboardModal.style.display = 'block';
-              }
-            }
-          } catch (error) {
-            console.error('Error in leaderboard button handler:', error);
-          }
+          this.playSound(this.dom.selectSound);
+          this.hideAllModalsAndScreens();
+          this.displayLeaderboard();
         });
-        
-        // Add change player button listener
         this.dom.changePlayerHomeBtn.addEventListener('click', () => {
-          try {
-            this.playSound(this.dom.selectSound);
-            this.hideAllModalsAndScreens();
-            localStorage.removeItem('hanoiPlayerName');
-            this.state.playerName = '';
-            this.showWelcomeModal();
-          } catch (error) {
-            console.error('Error in change player button handler:', error);
-          }
+          this.hideAllModalsAndScreens();
+          localStorage.removeItem('hanoiPlayerName');
+          this.state.playerName = '';
+          this.showWelcomeModal();
         });
-        
-        // Ensure all other game buttons work too
-        this.setupCommonGameButtons();
-      }
         
         // Game screen buttons
         this.dom.backToHomeBtn.addEventListener('click', () => {
@@ -1784,4 +1756,292 @@
         this.state.currentScreen = 'home';
       }
       
-      // ...existing code...
+      // Game mechanics for disk movement
+      setupEventListeners() {
+        if (!this.dom.towers) {
+          console.error('Towers not found in DOM');
+          return;
+        }
+        
+        // Mouse/touch events for tower interactions
+        this.dom.towers.forEach(tower => {
+          // Allow dropping by preventing default on dragover
+          tower.addEventListener('dragover', e => e.preventDefault());
+          // Handle drop events
+          tower.addEventListener('drop', e => this.handleDrop(e));
+          // Add click handler for mobile and desktop
+          tower.addEventListener('click', e => this.handleTowerClick(e));
+        });
+
+        // Set up drag events
+        document.addEventListener('dragstart', e => this.handleDragStart(e));
+        document.addEventListener('dragend', () => this.handleDragEnd());
+        
+        // Touch events for mobile
+        document.addEventListener('touchstart', e => this.handleTouchStart(e), { passive: false });
+        document.addEventListener('touchend', e => this.handleTouchEnd(e), { passive: false });
+        document.addEventListener('touchmove', e => {
+          if (this.state.selectedDisk) e.preventDefault();
+        }, { passive: false });
+        
+        // Game control buttons
+        if (this.dom.resetBtn) {
+          this.dom.resetBtn.addEventListener('click', () => this.resetLevel());
+        }
+        
+        if (this.dom.undoBtn) {
+          this.dom.undoBtn.addEventListener('click', () => this.undoMove());
+        }
+        
+        if (this.dom.prevLevelBtn) {
+          this.dom.prevLevelBtn.addEventListener('click', () => this.prevLevel());
+        }
+        
+        if (this.dom.nextLevelBtn) {
+          this.dom.nextLevelBtn.addEventListener('click', () => this.nextLevel());
+        }
+        
+        if (this.dom.soundToggleBtn) {
+          this.dom.soundToggleBtn.addEventListener('click', () => this.toggleSound());
+        }
+
+        // Keyboard support for accessibility
+        document.addEventListener('keydown', e => {
+          if (e.key === 'Escape') this.cleanupSelection();
+          // Add keyboard shortcuts for other actions if needed
+        });
+      }
+      
+      handleDragStart(e) {
+        const disk = e.target;
+        if (!disk.classList.contains('disk')) return;
+        
+        const stack = disk.parentElement;
+        // Only allow the top disk to be moved
+        if (disk !== stack.lastElementChild) {
+          e.preventDefault();
+          return;
+        }
+        
+        this.state.selectedDisk = disk;
+        this.state.selectedTower = stack.parentElement;
+        disk.classList.add('dragging', 'selected');
+        
+        this.highlightValidTowers();
+        e.dataTransfer.setData('text/plain', disk.dataset.size);
+        e.dataTransfer.effectAllowed = 'move';
+      }
+      
+      handleDragEnd() {
+        this.cleanupSelection();
+      }
+      
+      handleDrop(e) {
+        e.preventDefault();
+        if (!this.state.selectedDisk) return;
+        
+        const targetTower = e.currentTarget;
+        this.processMove(targetTower);
+      }
+      
+      handleTowerClick(e) {
+        const tower = e.currentTarget;
+        
+        // If no disk is selected, try to select the top disk from this tower
+        if (!this.state.selectedDisk) {
+          const stack = tower.querySelector('.disks-stack');
+          const topDisk = stack.lastElementChild;
+          
+          if (topDisk) {
+            this.state.selectedDisk = topDisk;
+            this.state.selectedTower = tower;
+            topDisk.classList.add('selected');
+            this.highlightValidTowers();
+          }
+          return;
+        }
+        
+        // If a disk is already selected, try to move it to this tower
+        this.processMove(tower);
+      }
+      
+      handleTouchStart(e) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const element = document.elementFromPoint(touch.clientX, touch.clientY);
+        
+        if (!element || !element.classList.contains('disk')) return;
+        
+        const disk = element;
+        const stack = disk.parentElement;
+        // Only allow the top disk to be moved
+        if (disk !== stack.lastElementChild) return;
+        
+        this.state.selectedDisk = disk;
+        this.state.selectedTower = stack.parentElement;
+        disk.classList.add('selected');
+        
+        this.highlightValidTowers();
+      }
+      
+      handleTouchEnd(e) {
+        if (!this.state.selectedDisk) return;
+        
+        const touch = e.changedTouches[0];
+        const element = document.elementFromPoint(touch.clientX, touch.clientY);
+        const targetTower = element ? element.closest('.tower-container') : null;
+        
+        if (!targetTower || targetTower === this.state.selectedTower) {
+          this.cleanupSelection();
+          return;
+        }
+        
+        this.processMove(targetTower);
+      }
+      
+      highlightValidTowers() {
+        if (!this.dom.towers) return;
+        
+        this.dom.towers.forEach(t => {
+          // Highlight towers where the selected disk can be moved
+          t.classList.toggle('highlight', 
+            t !== this.state.selectedTower && 
+            this.isValidMove(this.state.selectedDisk, t)
+          );
+        });
+      }
+      
+      isValidMove(disk, targetTower) {
+        if (!disk || !targetTower || this.state.selectedTower === targetTower) return false;
+        
+        const stack = targetTower.querySelector('.disks-stack');
+        if (!stack) return false;
+        
+        const topDisk = stack.lastElementChild;
+        // Can move if target tower is empty or selected disk is smaller than top disk
+        return !topDisk || parseInt(disk.dataset.size) < parseInt(topDisk.dataset.size);
+      }
+      
+      processMove(targetTower) {
+        if (!this.state.selectedDisk || !targetTower) return;
+        
+        if (!this.isValidMove(this.state.selectedDisk, targetTower)) {
+          // Show invalid move animation
+          targetTower.classList.add('invalid');
+          setTimeout(() => {
+            targetTower.classList.remove('invalid');
+            this.cleanupSelection();
+          }, 300);
+          return;
+        }
+        
+        // Start timer on first move
+        if (this.state.moveCount === 0) {
+          this.startTimer();
+        }
+        
+        // Record the move for undo functionality
+        const fromTower = this.state.selectedTower;
+        const disk = this.state.selectedDisk;
+          // Save move in history
+        this.state.moveHistory.push({
+          disk: disk.dataset.size,
+          from: fromTower.dataset.tower,
+          to: targetTower.dataset.tower
+        });
+        
+        // Enable undo button
+        if (this.dom.undoBtn) {
+          this.dom.undoBtn.disabled = false;
+        }
+        
+        // Play sound effect
+        this.playSound(this.dom.moveSound);
+        
+        // Move the disk
+        const stack = targetTower.querySelector('.disks-stack');
+        stack.appendChild(this.state.selectedDisk);
+        
+        // Update move counter and UI
+        this.state.moveCount++;
+        this.updateUI();
+        this.cleanupSelection();
+        
+        // Check if the player has won
+        this.checkWin();
+      }
+      
+      cleanupSelection() {
+        if (this.state.selectedDisk) {
+          this.state.selectedDisk.classList.remove('dragging', 'selected');
+          this.state.selectedDisk = null;
+        }
+        this.state.selectedTower = null;
+        
+        // Remove highlights and invalid states
+        if (this.dom.towers) {
+          this.dom.towers.forEach(t => t.classList.remove('highlight', 'invalid'));
+        }
+      }
+      
+      undoMove() {
+        if (this.state.moveHistory.length === 0) return;
+        
+        // Get the last move from history
+        const lastMove = this.state.moveHistory.pop();
+        
+        // Find source and target towers
+        const toTower = this.dom.towers[parseInt(lastMove.from) - 1];
+        const fromTower = this.dom.towers[parseInt(lastMove.to) - 1];
+        
+        if (!fromTower || !toTower) return;
+        
+        // Get the top disk (should be the one we want to move back)
+        const fromStack = fromTower.querySelector('.disks-stack');
+        const disk = fromStack.lastElementChild;
+        
+        if (!disk || parseInt(disk.dataset.size) !== parseInt(lastMove.disk)) {
+          console.error('Undo error: Disk mismatch');
+          return;
+        }
+        
+        // Move disk back to original tower
+        const toStack = toTower.querySelector('.disks-stack');
+        toStack.appendChild(disk);
+        
+        // Update move counter and UI
+        this.state.moveCount++;
+        this.updateUI();
+        
+        // Disable undo button if no more moves to undo
+        if (this.state.moveHistory.length === 0 && this.dom.undoBtn) {
+          this.dom.undoBtn.disabled = true;
+        }
+      }
+      
+      toggleSound() {
+        this.state.soundEnabled = !this.state.soundEnabled;
+        if (this.dom.soundToggleBtn) {
+          this.dom.soundToggleBtn.textContent = this.state.soundEnabled ? '🔊' : '🔇';
+        }
+      }
+      
+      resetLevel() {
+        // Reset the level without changing the number of disks
+        this.setupLevel(this.state.totalDisks);
+      }
+      
+      prevLevel() {
+        if (this.state.level > 1) {
+          this.state.level--;
+          this.state.totalDisks--;
+          this.setupLevel(this.state.totalDisks);
+        }
+      }
+      
+      nextLevel() {
+        if (this.state.level < (this.state.maxDisks - this.state.minDisks + 1)) {
+          this.state.level++;
+          this.state.totalDisks++;
+          this.setupLevel(this.state.totalDisks);
+        }
