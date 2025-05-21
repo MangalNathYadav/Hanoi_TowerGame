@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <style>
+    .tower { stroke: #8D6E63; stroke-width: 2; }
+    .base { fill: #5D4037; }
+    .disk1 { fill: #4A89DC; }
+    .disk2 { fill: #5D9CEC; }
+    .disk3 { fill: #4ECDC4; }
+  </style>
+  <!-- Base -->
+  <rect class="base" x="2" y="28" width="28" height="4" rx="1" />
+  <!-- Tower -->
+  <line class="tower" x1="16" y1="4" x2="16" y2="28" />
+  <!-- Disks -->
+  <rect class="disk3" x="6" y="24" width="20" height="4" rx="2" />
+  <rect class="disk2" x="8" y="20" width="16" height="4" rx="2" />
+  <rect class="disk1" x="10" y="16" width="12" height="4" rx="2" />
+</svg> 

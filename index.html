@@ -1,1132 +1,323 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Tower of Hanoi</title>  <style>    :root {
-      --disk-height: 22px;
-      --disk-min-width: 50px;
-      --tower-width: 30vw;
-      --tower-min-width: 100px;
-      --tower-max-width: 150px;
-      --primary-color: #4a89dc;
-      --highlight-color: #5d9cec;
-      --win-color: #4caf50;
-      --error-color: #f44336;
-      --dark-bg: #121212;
-      --card-bg: #222;
-      --card-border: #333;
-      --text-primary: #fff;
-      --text-secondary: #aaa;
-      --gradient-primary: linear-gradient(135deg, #4a89dc, #5d9cec);
-      --gradient-success: linear-gradient(135deg, #43a047, #66bb6a);
-      --gradient-warning: linear-gradient(135deg, #ff9800, #ffc107);
-      --gradient-danger: linear-gradient(135deg, #e53935, #ef5350);
-    }
-
-    * {
-      box-sizing: border-box;
-      touch-action: manipulation;
-    }
-
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: var(--dark-bg);
-      color: var(--text-primary);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow-x: hidden;
-    }
-    
-    /* Loading Screen Styles */
-    .fullscreen-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background: #f0f2f5;
-    }
-
-    .loading-content, .home-content {
-      text-align: center;
-      padding: 2rem;
-    }
-
-    .loading-bar-container {
-      width: 300px;
-      height: 20px;
-      background: #e0e0e0;
-      border-radius: 10px;
-      margin: 1rem auto;
-      overflow: hidden;
-    }
-
-    .loading-bar {
-      width: 0%;
-      height: 100%;
-      background: linear-gradient(90deg, #2196F3, #03A9F4);
-      border-radius: 10px;
-      transition: width 0.2s ease-out;
-    }
-
-    /* Home Screen Styles */
-    .home-content {
-      text-align: center;
-      width: 100%;
-      max-width: 500px;
-      padding: 20px;
-    }
-    
-    .logo-area {
-      margin-bottom: 30px;
-    }
-    
-    .home-logo {
-      width: 150px;
-      height: auto;
-      margin-bottom: 10px;
-    }
-      .game-title {
-      font-size: 2.5rem;
-      margin: 0;
-      background: linear-gradient(to right, #4a89dc, #5d9cec);
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-      font-weight: 800;
-      letter-spacing: 1px;
-    }
-    
-    .welcome-player {
-      font-size: 1.2rem;
-      margin-bottom: 30px;
-    }
-    
-    .home-buttons {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      margin: 2rem auto;
-      max-width: 300px;
-    }
-    
-    .home-btn {
-      padding: 1rem 2rem;
-      font-size: 1.2rem;
-      border: none;
-      border-radius: 8px;
-      background: #e0e0e0;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-    
-    .home-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-    
-    .primary-btn {
-      background: #2196F3;
-      color: white;
-    }
-    
-    .highlight-text {
-      color: #2196F3;
-      font-weight: bold;
-    }
-    
-    /* Game Screen Styles */
-    #gameScreen {
-      width: 100%;
-      min-height: 100vh;
-      padding: 10px;
-      display: flex;
-      flex-direction: column;
-      background: linear-gradient(to bottom, #121212, #1a1a1a);
-    }
-    
-    .game-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-      padding: 5px 10px;
-      background: rgba(0,0,0,0.3);
-      border-radius: 8px;
-    }
-
-    .instructions-panel {
-      background: rgba(0,0,0,0.2);
-      padding: 10px;
-      border-radius: 8px;
-      margin: 5px 0;
-      text-align: center;
-    }
-    
-    .instructions {
-      color: #e0e0e0;
-      font-size: 0.95rem;
-      margin: 0;
-    }
-    
-    .game-info {
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 15px;
-      padding: 10px;
-      margin: 10px auto;
-      background: rgba(0,0,0,0.2);
-      border-radius: 8px;
-      max-width: 600px;
-    }
-
-    .info-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-width: 70px;
-      padding: 5px 10px;
-      border-radius: 5px;
-      background: rgba(255,255,255,0.05);
-    }
-
-    .info-label {
-      font-size: 0.8rem;
-      color: #aaaaaa;
-      margin-bottom: 2px;
-    }
-
-    .info-value {
-      font-size: 1.1rem;
-      font-weight: bold;
-    }
-
-    .moves .info-value {
-      color: #ff9800;
-    }
-
-    .timer .info-value {
-      color: #2196F3;
-    }
-
-    .level .info-value {
-      color: #4caf50;
-    }    .game-area {
-      width: 100%;
-      padding: 15px;
-      display: flex;
-      justify-content: center;
-      align-items: flex-end;
-      flex: 1;
-      margin-top: 15px;
-      min-height: 250px; /* Ensure minimum height for the game area */
-    }
-
-    .tower-wrapper {
-      display: flex;
-      justify-content: space-around;
-      width: 100%;
-      max-width: 500px;
-      height: 220px;
-      background: rgba(0,0,0,0.2);
-      padding: 0 15px 0 15px;
-      border-radius: 8px;
-      box-shadow: inset 0 0 15px rgba(0,0,0,0.3), 0 4px 8px rgba(0,0,0,0.2);
-      position: relative;
-      margin-bottom: 10px; /* Add some space at the bottom */
-    }
-    
-    /* Add floor line for better visual alignment */
-    .tower-wrapper::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 6px;
-      background: #5d4037;
-      border-radius: 0 0 8px 8px;
-    }.tower-container {
-      position: relative;
-      width: 30%;
-      max-width: 160px;
-      min-width: 100px;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-end;
-      border-bottom: 6px solid #5d4037;
-      border-radius: 0 0 4px 4px;
-      padding-bottom: 6px; /* Add padding to ensure disks don't touch the floor */
-    }    .tower-rod {
-      position: absolute;
-      width: 16px;
-      height: 180px;
-      background: linear-gradient(to bottom, #8D6E63, #5D4037);
-      border-radius: 4px 4px 0 0;
-      bottom: 6px; /* Align with the border-bottom of tower-container */
-      left: 50%;
-      transform: translateX(-50%); /* Center the rod precisely */
-      z-index: 1;
-      box-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-    }
-
-    .disks-stack {
-      position: relative;
-      display: flex;
-      flex-direction: column-reverse;
-      align-items: center;
-      width: 100%;
-      margin-bottom: 0;
-      z-index: 2;
-    }    .disk {
-      height: 22px;
-      background: linear-gradient(90deg, #2196F3, #03A9F4);
-      border-radius: 12px;
-      margin: 1px 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      color: white;
-      font-weight: bold;
-      cursor: grab;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.4);
-      user-select: none;
-      z-index: 2; /* Ensure disks appear above the tower rod */
-      border: 1px solid rgba(255,255,255,0.2);
-    }
-    
-    .disk:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 4px 8px rgba(0,0,0,0.5);
-    }    .disk.moving {
-      transition: all 0.3s ease;
-    }
-    
-    .disk.selected {
-      transform: translateY(-12px);
-      box-shadow: 0 8px 16px rgba(0,0,0,0.35);
-      z-index: 20;
-      border: 2px solid rgba(255,255,255,0.4);
-    }    .tower-container.highlight {
-      background: rgba(76, 175, 80, 0.2);
-      border-bottom-color: #4caf50;
-      transition: all 0.3s ease;
-      animation: pulse 1.5s infinite;
-    }.tower-container.highlight::after {
-      content: "";
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      border-radius: 8px;
-      border: 3px dashed rgba(76, 175, 80, 0.7);
-      pointer-events: none;
-      animation: pulse 1.5s infinite alternate;
-    }
-    
-    .tower-container.invalid {
-      animation: shake 0.4s;
-      background: rgba(244, 67, 54, 0.2);
-      border-bottom-color: #f44336;
-    }
-
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      20% { transform: translateX(-10px); }
-      40% { transform: translateX(10px); }
-      60% { transform: translateX(-7px); }
-      80% { transform: translateX(7px); }
-    }
-
-    .logo {
-      max-width: 300px;
-      height: auto;
-      margin-bottom: 2rem;
-    }
-    
-    /* Modal styles for welcome and leaderboard */
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 100;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.7);
-      overflow-y: auto;
-      animation: fadeIn 0.3s ease-out;
-    }
-    
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-    
-    .modal-content {
-      background-color: #222;
-      margin: 15% auto;
-      padding: 20px;
-      width: 80%;
-      max-width: 500px;
-      border-radius: 8px;
-      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-      color: white;
-      animation: slideIn 0.3s ease-out;
-    }
-    
-    @keyframes slideIn {
-      from { transform: translateY(-20px); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
-    }
-    
-    .modal h2 {
-      margin-top: 0;
-      color: var(--primary-color);
-    }
-    
-    /* Modal input styles */
-    .modal input {
-      width: 100%;
-      padding: 8px;
-      margin: 10px 0;
-      background-color: #333;
-      border: 1px solid #444;
-      border-radius: 4px;
-      color: white;
-      font-size: 1rem;
-      transition: border-color 0.3s;
-    }
-    
-    .modal input.invalid {
-      border-color: var(--error-color);
-      animation: shake 0.3s;
-    }.table-container {
-      width: 100%;
-      overflow-x: auto;
-      margin-top: 15px;
-      -webkit-overflow-scrolling: touch;
-      border-radius: 4px;
-      border: 1px solid #444;
-    }
-    
-    .leaderboard-table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 380px;
-    }
-    
-    .leaderboard-table th, .leaderboard-table td {
-      padding: 8px;
-      text-align: left;
-      border-bottom: 1px solid #444;
-      white-space: nowrap;
-    }
-    
-    .leaderboard-table th {
-      background-color: #333;
-      color: var(--primary-color);
-    }
-      .win-modal {
-      text-align: center;
-      background-color: #222;
-      border: 2px solid var(--win-color);
-    }
-      .win-modal h2 {
-      color: var(--win-color);
-      animation: pulse 1.5s infinite;
-    }
-    
-    .win-details {
-      margin: 20px 0;
-      font-size: 1.1rem;
-      line-height: 1.8;
-    }
-    
-    .primary-btn {
-      background-color: var(--win-color);
-    }
-    
-    .primary-btn:active {
-      background-color: #3d8c40;
-    }
-    
-    .bottom-buttons {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      margin-top: 20px;
-    }
-    
-    /* Level Selection Styles */
-    .level-selection-modal {
-      width: 90%;
-      max-width: 600px;
-    }
-    
-    .levels-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-      gap: 15px;
-      margin: 20px 0;
-    }
-    
-    .level-card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 8px;
-      padding: 15px 10px;
-      text-align: center;
-      position: relative;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-    
-    .level-card.completed {
-      border-color: var(--win-color);
-    }
-    
-    .level-card.current {
-      border-color: var(--highlight-color);
-      box-shadow: 0 0 10px rgba(93, 156, 236, 0.5);
-    }
-    
-    .level-card.locked {
-      cursor: not-allowed;
-      opacity: 0.6;
-    }
-    
-    .level-card:not(.locked):hover {
-      transform: translateY(-5px);
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-    }
-    
-    .level-number {
-      font-size: 1.5rem;
-      font-weight: bold;
-      margin-bottom: 5px;
-    }
-    
-    .level-status {
-      font-size: 0.8rem;
-      color: var(--text-secondary);
-    }
-    
-    .level-card.completed .level-number {
-      color: var(--win-color);
-    }
-    
-    .lock-icon {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 2rem;
-      color: rgba(255, 255, 255, 0.5);
-    }
-    
-    /* Game Completion Styles */
-    .completion-modal {
-      width: 95%;
-      max-width: 700px;
-    }
-    
-    .completion-message {
-      text-align: center;
-      margin: 20px 0;
-      font-size: 1.1rem;
-      line-height: 1.6;
-    }
-    
-    .completion-stats {
-      margin: 30px 0;
-    }
-    
-    .completion-stats h3 {
-      text-align: center;
-      margin-bottom: 15px;
-      color: var(--highlight-color);
-    }
-    
-    .completion-table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 500px;
-    }
-    
-    .completion-table th, .completion-table td {
-      padding: 10px;
-      text-align: center;
-      border-bottom: 1px solid var(--card-border);
-    }
-    
-    .completion-table th {
-      background-color: rgba(255, 255, 255, 0.1);
-      color: var(--highlight-color);
-    }
-    
-    .welcome-modal {
-      text-align: center;
-    }
-    
-    .small-btn {
-      flex: none;
-      padding: 4px 8px;
-      font-size: 0.8rem;
-      margin-left: 8px;
-    }
-      #currentPlayerName {
-      font-weight: bold;
-      color: var(--primary-color);
-    }
-    
-    .highlight-text {
-      font-weight: bold;
-      color: var(--highlight-color);
-    }
-      /* Animation effects */
-    @keyframes pulse {
-      0% { transform: scale(1); opacity: 0.7; }
-      50% { transform: scale(1.02); opacity: 1; }
-      100% { transform: scale(1); opacity: 0.7; }
-    }
-    
-    @keyframes glow {
-      0% { box-shadow: 0 0 8px rgba(93, 156, 236, 0.6); }
-      50% { box-shadow: 0 0 20px rgba(93, 156, 236, 0.9); }
-      100% { box-shadow: 0 0 8px rgba(93, 156, 236, 0.6); }
-    }
-    
-    .disk.win-animation {
-      animation: pulse 0.5s infinite, glow 1s infinite;
-    }
-    
-    .tower-container.win-tower {
-      animation: glow 1s infinite;
-    }
-    
-    .move-counter-change {
-      animation: pulse 0.3s;
-    }    /* Mobile-specific adjustments */
-    @media (max-width: 768px) {
-      :root {
-        --disk-height: 20px;
-        --disk-min-width: 45px;
-        --tower-width: 30vw;
-        --tower-min-width: 90px;
-      }
-
-      h1 {
-        font-size: 1.4rem;
-      }
-
-      .instructions {
-        font-size: 0.85rem;
-      }
-
-      .game-info {
-        font-size: 0.9rem;
-        gap: 12px;
-        flex-wrap: wrap;
-      }
-
-      .controls {
-        gap: 8px;
-      }
-
-      button {
-        padding: 8px 10px;
-        font-size: 0.85rem;
-      }
-
-      .disk {
-        font-size: 0.75rem;
-      }
-    }    @media (max-width: 500px) {
-      :root {
-        --disk-height: 18px;
-        --disk-min-width: 40px;
-        --tower-width: 28vw;
-        --tower-min-width: 85px;
-      }
-
-      h1 {
-        font-size: 1.3rem;
-      }
-
-      .instructions {
-        font-size: 0.8rem;
-      }
-
-      .game-info {
-        font-size: 0.85rem;
-        gap: 10px;
-      }
-
-      .controls {
-        gap: 8px;
-        flex-wrap: wrap;
-      }
-
-      button {
-        padding: 7px 10px;
-        font-size: 0.85rem;
-        margin-bottom: 5px;
-      }
-
-      .disk {
-        font-size: 0.7rem;
-      }
-      
-      .modal-content {
-        width: 95%;
-        margin: 10% auto;
-        padding: 15px;
-      }
-      
-      .leaderboard-table {
-        font-size: 0.9rem;
-      }
-      
-      .leaderboard-table th, .leaderboard-table td {
-        padding: 6px 4px;
-      }
-      
-      .table-container {
-        margin-bottom: 10px;
-      }
-      
-      .win-details {
-        font-size: 1rem;
-        line-height: 1.6;
-        margin: 15px 0;
-      }
-      
-      .bottom-buttons {
-        flex-direction: column;
-        width: 100%;
-      }
-      
-      .bottom-buttons button {
-        width: 100%;
-        margin-bottom: 8px;
-      }
-    }    /* Confetti effect */
-    .confetti {
-      position: fixed;
-      width: 10px;
-      height: 10px;
-      background-color: #f44336;
-      opacity: 0;
-      transform: rotate(45deg);
-      animation: confetti-fall 3s forwards;
-      z-index: 1000;
-    }
-    
-    @keyframes confetti-fall {
-      0% {
-        opacity: 1;
-        top: -10px;
-        transform: rotate(0deg);
-      }
-      100% {
-        opacity: 0;
-        top: 100vh;
-        transform: rotate(720deg);
-      }
-    }
-    
-    @keyframes confetti-fall-left {
-      0% {
-        opacity: 1;
-        top: -10px;
-        left: calc(var(--start-left) + 0px);
-        transform: rotate(0deg);
-      }
-      25% {
-        left: calc(var(--start-left) - 10px);
-      }
-      50% {
-        left: calc(var(--start-left) + 5px);
-      }
-      75% {
-        left: calc(var(--start-left) - 5px);
-      }
-      100% {
-        opacity: 0;
-        top: 100vh;
-        left: calc(var(--start-left) - 15px);
-        transform: rotate(720deg);
-      }
-    }
-    
-    @keyframes confetti-fall-right {
-      0% {
-        opacity: 1;
-        top: -10px;
-        left: calc(var(--start-left) + 0px);
-        transform: rotate(0deg);
-      }
-      25% {
-        left: calc(var(--start-left) + 10px);
-      }
-      50% {
-        left: calc(var(--start-left) - 5px);
-      }
-      75% {
-        left: calc(var(--start-left) + 5px);
-      }
-      100% {
-        opacity: 0;
-        top: 100vh;
-        left: calc(var(--start-left) + 15px);
-        transform: rotate(720deg);
-      }
-    }
-    
-    /* Fireworks effects */
-    .firework-launch {
-      position: fixed;
-      bottom: 0;
-      width: 4px;
-      height: 10px;
-      background-color: #fff;
-      animation: launch 1s forwards;
-      z-index: 1000;
-    }
-    
-    @keyframes launch {
-      0% {
-        height: 10px;
-        bottom: 0;
-        opacity: 1;
-      }
-      50% {
-        height: 20px;
-      }
-      100% {
-        height: 5px;
-        bottom: 70vh;
-        opacity: 0.2;
-      }
-    }
-    
-    .firework-particle {
-      position: fixed;
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
-      opacity: 1;
-      z-index: 1000;
-    }
-    
-    @media (max-width: 350px) {
-      :root {
-        --tower-width: 26vw;
-        --tower-min-width: 75px;
-      }
-
-      .controls {
-        flex-wrap: wrap;
-      }
-
-      button {
-        min-width: 80px;
-      }
-    }    /* Game controls styling */
-    .controls {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      margin: 10px auto;
-      flex-wrap: wrap;
-      max-width: 400px;
-      padding: 6px;
-      background: rgba(0,0,0,0.15);
-      border-radius: 6px;
-    }
-    
-    .controls button {
-      background: rgba(45, 45, 45, 0.9);
-      color: white;
-      border: none;
-      padding: 8px 12px;
-      border-radius: 4px;
-      font-size: 0.9rem;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-      min-width: 70px;
-      font-weight: 500;
-    }
-    
-    .controls button:hover:not(:disabled) {
-      background: rgba(60, 60, 60, 0.95);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-    }
-    
-    .controls button:active:not(:disabled) {
-      transform: translateY(0);
-      box-shadow: 0 1px 2px rgba(0,0,0,0.2);
-    }
-    
-    .controls button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-    
-    #undoBtn {
-      background: linear-gradient(135deg, #9c27b0, #ba68c8);
-    }
-    
-    #undoBtn:hover:not(:disabled) {
-      background: linear-gradient(135deg, #ba68c8, #9c27b0);
-    }
-    
-    #resetBtn {
-      background: linear-gradient(135deg, #f44336, #ef5350);
-    }
-    
-    #resetBtn:hover:not(:disabled) {
-      background: linear-gradient(135deg, #ef5350, #f44336);
-    }
-    
-    #prevLevelBtn, #nextLevelBtn {
-      background: linear-gradient(135deg, #2196F3, #64B5F6);
-    }
-    
-    #prevLevelBtn:hover:not(:disabled), #nextLevelBtn:hover:not(:disabled) {
-      background: linear-gradient(135deg, #64B5F6, #2196F3);
-    }
-    
-    @keyframes buttonPulse {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.1); }
-      100% { transform: scale(1); }
-    }
-    
-    .button-pulse {
-      animation: buttonPulse 0.3s;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="Tower of Hanoi - A classic puzzle game with multiple levels and leaderboards">
+    <meta name="theme-color" content="#1E1E1E">
+    <meta name="author" content="Tower of Hanoi Team">
+    <title>Tower of Hanoi</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="res/stem_logo.jpeg" type="image/x-icon">
+    <!-- Preload audio files for better performance -->
+    <link rel="preload" href="res/move.mp3" as="audio">
+    <link rel="preload" href="res/select.mp3" as="audio">
+    <link rel="preload" href="res/win.mp3" as="audio">
+    <link rel="preload" href="res/game-complete.mp3" as="audio">
 </head>
-<body>
-  <!-- Loading Screen -->
-  <div id="loadingScreen" class="fullscreen-overlay">
-    <div class="loading-content">
-      <div class="logo-placeholder">
-        <img src="res/header.png" alt="Tower of Hanoi" class="logo">
-      </div>
-      <h2>Tower of Hanoi</h2>
-      <div class="loading-bar-container">
-        <div id="loadingBar" class="loading-bar"></div>
-      </div>
-      <p class="loading-text">Loading game resources... <span id="loadingProgress">0%</span></p>
-    </div>
-  </div>
-  
-  <!-- Home Screen -->
-  <div id="homeScreen" class="fullscreen-overlay" style="display: none;">
-    <div class="home-content">
-      <div class="logo-area">
-        <img src="res/header.png" alt="Tower of Hanoi" class="logo">
-      </div>
-      
-      <div class="welcome-player">
-        <h2>Welcome, <span id="homePlayerName" class="highlight-text">Player</span>!</h2>
-      </div>
-        <div class="home-buttons">
-        <button id="playBtn" class="home-btn primary-btn">Play Game</button>
-        <button id="levelsBtn" class="home-btn">Select Level</button>
-        <button id="homeLeaderboardBtn" class="home-btn">Leaderboard</button>
-        <button id="homeSoundToggleBtn" class="home-btn">🔊 Sound</button>
-        <button id="changePlayerHomeBtn" class="home-btn">Switch User</button>
-      </div>
-      
-      <div class="game-version">
-        <p>Version 2.0</p>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Game Screen -->
-  <div id="gameScreen" style="display: none;">
-    <div class="game-header">
-      <button id="backToHomeBtn" class="icon-btn">← Back</button>
-      <h1>Tower of Hanoi</h1>
-      <button id="gameOptionsBtn" class="icon-btn">⚙️</button>
-    </div>
-      <div class="instructions-panel">
-      <p class="instructions">Move all disks to the rightmost tower. Larger disks can't be placed on smaller ones.</p>
-    </div>
-    
-    <div class="game-info">
-      <div class="info-item player">
-        <div class="info-label">Player:</div>
-        <div class="info-value"><span id="playerNameDisplay" class="highlight-text"></span></div>
-      </div>
-      <div class="info-item level">
-        <div class="info-label">Level:</div>
-        <div class="info-value"><span id="levelDisplay">1</span></div>
-      </div>
-      <div class="info-item moves">
-        <div class="info-label">Moves:</div>
-        <div class="info-value"><span id="moveCounter">0</span></div>
-      </div>
-      <div class="info-item optimal">
-        <div class="info-label">Optimal:</div>
-        <div class="info-value"><span id="optimalMoves">7</span></div>
-      </div>
-      <div class="info-item timer">
-        <div class="info-label">Time:</div>
-        <div class="info-value"><span id="timer">00:00</span></div>
-      </div>
-    </div>      <div class="controls">
-      <button id="resetBtn">Reset</button>
-      <button id="undoBtn" disabled>↩ Undo</button>
-      <button id="prevLevelBtn">← Level</button>
-      <button id="nextLevelBtn">Level →</button>
-    </div>
-    
-    <div class="game-area">
-      <div class="tower-wrapper">
-        <div class="tower-container" data-tower="1">
-          <div class="tower-rod"></div>
-          <div class="disks-stack"></div>
-        </div>
-        <div class="tower-container" data-tower="2">
-          <div class="tower-rod"></div>
-          <div class="disks-stack"></div>
-        </div>
-        <div class="tower-container" data-tower="3">
-          <div class="tower-rod"></div>
-          <div class="disks-stack"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <!-- Welcome Modal -->
-  <div id="welcomeModal" class="modal">
-    <div class="modal-content welcome-modal">
-      <h2>Welcome to Tower of Hanoi!</h2>
-      <p>Please enter your name to track your progress and compete in the leaderboard:</p>
-      <input type="text" id="playerNameInput" maxlength="15" placeholder="Your Name">
-      <div class="bottom-buttons">
-        <button id="startGameBtn" class="primary-btn">Start Game</button>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Leaderboard Modal -->
-  <div id="leaderboardModal" class="modal">
-    <div class="modal-content">
-      <h2>Leaderboard</h2>
-      <p>Player: <span id="currentPlayerName"></span> <button id="changePlayerBtn" class="small-btn">Change</button></p>
-      <div class="level-selector">
-        <label for="leaderboardLevelSelect">Level: </label>
-        <select id="leaderboardLevelSelect"></select>
-      </div>
-      <div class="table-container">
-        <table class="leaderboard-table">
-          <thead>
-            <tr>
-              <th>Rank</th>
-              <th>Player</th>
-              <th>Moves</th>
-              <th>Time</th>
-              <th>Date</th>
-            </tr>
-          </thead>
-          <tbody id="leaderboardBody"></tbody>
-        </table>
-      </div>
-      <div class="bottom-buttons">
-        <button id="closeLeaderboardBtn">Close</button>
-      </div>
-    </div>
-  </div>
 
-  <!-- Win Modal -->
-  <div id="winModal" class="modal">
-    <div class="modal-content win-modal">
-      <h2>🎉 CONGRATULATIONS! 🎉</h2>
-      <div class="win-details">
-        <p>You won Level <span id="winLevel"></span> in <span id="winMoves" class="highlight-text"></span> moves!</p>
-        <p>Time: <span id="winTime" class="highlight-text"></span></p>
-        <p>Optimal moves: <span id="winOptimal"></span></p>
-        <p>Efficiency: <span id="winEfficiency" class="highlight-text"></span>%</p>
-      </div>
-      <div class="bottom-buttons">
-        <button id="nextLevelBtn2" class="primary-btn">Next Level</button>
-        <button id="stayBtn">Stay Here</button>
-        <button id="backToHomeBtn2">Back to Home</button>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Level Selection Modal -->
-  <div id="levelSelectionModal" class="modal">
-    <div class="modal-content level-selection-modal">
-      <h2>Select Level</h2>
-      <div class="levels-grid" id="levelsGrid">
-        <!-- Levels will be generated here -->
-      </div>
-      <div class="bottom-buttons">
-        <button id="closeLevelsBtn">Close</button>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Game Completion Modal -->
-  <div id="gameCompletionModal" class="modal">
-    <div class="modal-content completion-modal">
-      <h2>🏆 GAME COMPLETED! 🏆</h2>
-      <div class="completion-message">
-        <p>Congratulations <span id="completionPlayerName" class="highlight-text"></span>!</p>
-        <p>You have mastered all levels of the Tower of Hanoi!</p>
-      </div>
-      <div class="completion-stats">
-        <h3>Your Performance:</h3>
-        <div class="table-container">
-          <table class="completion-table">
-            <thead>
-              <tr>
-                <th>Level</th>
-                <th>Moves</th>
-                <th>Optimal</th>
-                <th>Efficiency</th>
-                <th>Time</th>
-              </tr>
-            </thead>
-            <tbody id="completionTableBody">
-              <!-- Stats will be inserted here -->
-            </tbody>
-          </table>
+<body>
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="fullscreen-overlay">
+        <div class="loading-content">
+            <div class="logo-placeholder">
+                <img src="res/stem_logo.jpeg" alt="Tower of Hanoi" class="logo">
+            </div>
+            <h2>Tower of Hanoi</h2>
+            <div class="loading-bar-container">
+                <div id="loadingBar" class="loading-bar"></div>
+            </div>
+            <p class="loading-text">Loading game resources... <span id="loadingProgress">0%</span></p>
         </div>
-      </div>
-      <div class="bottom-buttons">
-        <button id="playAgainBtn" class="primary-btn">Play Again</button>
-        <button id="backToHomeBtn3">Back to Home</button>
-      </div>
     </div>
-  </div>  <!-- Sound Effects -->  <audio id="moveSound" src="res/move.mp3" preload="auto"></audio>
-  <audio id="selectSound" src="res/select.mp3" preload="auto"></audio>
-  <audio id="winSound" src="res/win.mp3" preload="auto"></audio>
-  <audio id="gameCompleteSound" src="res/game-complete.mp3" preload="auto"></audio>
-  <!-- Game implementation is now in game.js -->
-  <script src="game.js"></script>
+
+    <!-- Home Screen -->
+    <div id="homeScreen" class="fullscreen-overlay" style="display: none;">
+        <!-- Settings Button (Global) -->
+        <button class="settings-btn" id="globalSettingsBtn" title="Settings">
+            <svg viewBox="0 0 24 24">
+                <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/>
+            </svg>
+        </button>
+        <div class="home-content">
+            <div class="logo-area">
+                <img style="margin: 0px;
+    padding-top: 10px;" src="res/header.png" alt="Tower of Hanoi" class="logo">
+            </div>
+
+            <div class="welcome-player">
+                <h2 style="margin-top: 8px;">Welcome, <span id="homePlayerName" class="highlight-text">Player</span>!</h2>
+            </div>
+            <div class="home-buttons">
+                <button id="playBtn" class="home-btn primary-btn">Play Game</button>
+                <button id="levelsBtn" class="home-btn">Select Level</button>
+                <button id="homeLeaderboardBtn" class="home-btn">Leaderboard</button>
+                <button id="homeSoundToggleBtn" class="home-btn">🔊 Sound</button>
+                <button id="changePlayerHomeBtn" class="home-btn">Switch User</button>
+                <button id="aboutBtn" class="home-btn">About Game</button>
+            </div>
+
+            <div class="game-version">
+                <p>Version 2.0</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="gameScreen" style="display: none;">
+        <div class="game-header">
+            <button id="backToHomeBtn" class="icon-btn">← Back</button>
+            <h1>Tower of Hanoi</h1>
+            <button id="gameOptionsBtn" class="icon-btn">⚙️</button>
+        </div>
+        <div class="instructions-panel">
+            <p class="instructions">Move all disks to the rightmost tower. Larger disks can't be placed on smaller ones.</p>
+        </div>
+
+        <div class="game-info">
+            <div class="info-item player">
+                <div class="info-label">Player:</div>
+                <div class="info-value"><span id="playerNameDisplay" class="highlight-text"></span></div>
+            </div>
+            <div class="info-item level">
+                <div class="info-label">Level:</div>
+                <div class="info-value"><span id="levelDisplay">1</span></div>
+            </div>
+            <div class="info-item moves">
+                <div class="info-label">Moves:</div>
+                <div class="info-value"><span id="moveCounter">0</span></div>
+            </div>
+            <div class="info-item optimal">
+                <div class="info-label">Optimal:</div>
+                <div class="info-value"><span id="optimalMoves">7</span></div>
+            </div>
+            <div class="info-item timer">
+                <div class="info-label">Time:</div>
+                <div class="info-value"><span id="timer">00:00</span></div>
+            </div>
+        </div>
+        <div class="controls">
+            <button id="resetBtn">Reset</button>
+            <button id="undoBtn" disabled>↩ Undo</button>
+            <button id="prevLevelBtn">← Level</button>
+            <button id="nextLevelBtn">Level →</button>
+        </div>
+
+        <div class="game-area">
+            <div class="tower-wrapper">
+                <div class="tower-container" data-tower="1">
+                    <div class="tower-rod"></div>
+                    <div class="disks-stack"></div>
+                </div>
+                <div class="tower-container" data-tower="2">
+                    <div class="tower-rod"></div>
+                    <div class="disks-stack"></div>
+                </div>
+                <div class="tower-container" data-tower="3">
+                    <div class="tower-rod"></div>
+                    <div class="disks-stack"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Welcome Modal -->
+    <div id="welcomeModal" class="modal">
+        <div class="modal-content welcome-modal">
+            <h2>Welcome to Tower of Hanoi!</h2>
+            <p>Please enter your name to track your progress and compete in the leaderboard:</p>
+            <input type="text" id="playerNameInput" maxlength="15" placeholder="Your Name">
+            <div class="bottom-buttons">
+                <button id="startGameBtn" class="primary-btn">Start Game</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaderboard Modal -->
+    <div id="leaderboardModal" class="modal">
+        <div class="modal-content">
+            <h2>Leaderboard</h2>
+            <p>Player: <span id="currentPlayerName"></span> <button id="changePlayerBtn" class="small-btn">Change</button></p>
+            <div class="level-selector">
+                <label for="leaderboardLevelSelect">Level: </label>
+                <select id="leaderboardLevelSelect"></select>
+            </div>
+            <div class="table-container">
+                <table class="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Player</th>
+                            <th>Moves</th>
+                            <th>Time</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboardBody"></tbody>
+                </table>
+            </div>
+            <div class="bottom-buttons">
+                <button id="closeLeaderboardBtn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Win Modal -->
+    <div id="winModal" class="modal">
+        <div class="modal-content">
+            <div class="win-modal-inner">
+                <h2>🎉 LEVEL COMPLETED! 🎉</h2>
+                <div class="win-details">
+                    <div class="win-stat-item">
+                        <div class="win-stat-label">Level</div>
+                        <div class="win-stat-value" id="winLevel"></div>
+                    </div>
+                    <div class="win-stat-item">
+                        <div class="win-stat-label">Your Moves</div>
+                        <div class="win-stat-value" id="winMoves"></div>
+                    </div>
+                    <div class="win-stat-item">
+                        <div class="win-stat-label">Optimal Moves</div>
+                        <div class="win-stat-value" id="winOptimal"></div>
+                    </div>
+                    <div class="win-stat-item">
+                        <div class="win-stat-label">Time</div>
+                        <div class="win-stat-value" id="winTime"></div>
+                    </div>
+                    <div class="win-stat-item">
+                        <div class="win-stat-label">Efficiency</div>
+                        <div class="win-stat-value"><span id="winEfficiency"></span>%</div>
+                    </div>
+                </div>
+                <div class="win-buttons">
+                    <button id="nextLevelBtn2" class="primary-btn">Next Level ➜</button>
+                    <button id="stayBtn">Keep Playing This Level</button>
+                    <button id="backToHomeBtn2">Back to Home</button>
+                    <button id="shareScoreBtn" class="share-score">Share Your Score</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Level Selection Modal -->
+    <div id="levelSelectionModal" class="modal">
+        <div class="modal-content level-selection-modal">
+            <h2>Select Level</h2>
+            <div class="levels-grid" id="levelsGrid">
+                <!-- Levels will be generated here -->
+            </div>
+            <div class="bottom-buttons">
+                <button id="closeLevelsBtn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Completion Modal -->
+    <div id="gameCompletionModal" class="modal">
+        <div class="modal-content completion-modal">
+            <h2>🏆 GAME COMPLETED! 🏆</h2>
+            <div class="completion-message">
+                <p>Congratulations <span id="completionPlayerName" class="highlight-text"></span>!</p>
+                <p>You have mastered all levels of the Tower of Hanoi!</p>
+            </div>
+            <div class="completion-stats">
+                <h3>Your Performance:</h3>
+                <div class="table-container">
+                    <table class="completion-table">
+                        <thead>
+                            <tr>
+                                <th>Level</th>
+                                <th>Moves</th>
+                                <th>Optimal</th>
+                                <th>Efficiency</th>
+                                <th>Time</th>
+                            </tr>
+                        </thead>
+                        <tbody id="completionTableBody">
+                            <!-- Stats will be inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="bottom-buttons">
+                <button id="playAgainBtn" class="primary-btn">Play Again</button>
+                <button id="backToHomeBtn3">Back to Home</button>
+            </div>
+        </div>
+    </div>
+    <!-- About Modal -->
+    <div id="aboutModal" class="modal">
+        <div class="modal-content about-modal">
+            <div class="modal-header">
+                <h2>About This Game</h2>
+                <button id="closeAboutBtn" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Tower of Hanoi is a mathematical puzzle consisting of three rods and a number of disks of different sizes.</p>
+                <p>The puzzle starts with the disks in a neat stack in ascending order of size on one rod, the smallest at the top.</p>
+                <p>The objective is to move the entire stack to another rod, obeying the following rules:</p>
+                <ul>
+                    <li>Only one disk can be moved at a time.</li>
+                    <li>Each move consists of taking the upper disk from one of the stacks and placing it on top of another stack or on an empty rod.</li>
+                    <li>No disk may be placed on top of a smaller disk.</li>
+                </ul>
+                <p>This game was created as a demonstration of vanilla JavaScript, HTML, and CSS capabilities.</p>
+
+                <h3>Keyboard Shortcuts</h3>
+                <ul class="shortcuts">
+                    <li><strong>ESC</strong> - Close any open modal or panel</li>
+                    <li><strong>R</strong> - Reset current level</li>
+                    <li><strong>←</strong> - Previous level</li>
+                    <li><strong>→</strong> - Next level (if current level is completed)</li>
+                    <li><strong>H</strong> - Go back to home screen</li>
+                    <li><strong>T</strong> - Toggle between dark/light theme</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Switch User Modal -->
+    <div id="switchUserModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Switch User</h2>
+                <button id="closeSwitchUserBtn" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Please enter your name:</p>
+                <input type="text" id="newPlayerNameInput" maxlength="15" placeholder="Your Name">
+                <div class="bottom-buttons">
+                    <button id="confirmSwitchUserBtn" class="primary-btn">Confirm</button>
+                    <button id="cancelSwitchUserBtn">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reset Confirmation Modal -->
+    <div id="resetConfirmModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Reset Level?</h2>
+                <button id="closeResetConfirmBtn" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to reset the current level? All progress will be lost.</p>
+            </div>
+            <div class="bottom-buttons">
+                <button id="confirmResetBtn" class="primary-btn">Reset Level</button>
+                <button id="cancelResetBtn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sound Effects -->
+    <audio id="moveSound" src="res/move.mp3" preload="auto"></audio>
+    <audio id="selectSound" src="res/select.mp3" preload="auto"></audio>
+    <audio id="winSound" src="res/win.mp3" preload="auto"></audio>
+    <audio id="gameCompleteSound" src="res/game-complete.mp3" preload="auto"></audio>
+    <!-- Game implementation is now in game.js -->
+    <script src="js/game.js"></script>
 </body>
+
 </html>
