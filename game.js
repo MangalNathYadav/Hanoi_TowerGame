@@ -359,10 +359,21 @@ class HanoiGame {
         this.safeAddEventListener(this.dom.nextLevelBtn, 'click', () => this.nextLevel());
         this.safeAddEventListener(this.dom.leaderboardBtn, 'click', () => this.showLeaderboardModal());
 
-        // Add touch support
-        document.addEventListener('touchstart', (e) => this.handleTouchStart(e), { passive: false });
-        document.addEventListener('touchend', (e) => this.handleTouchEnd(e), { passive: false });
-        document.addEventListener('touchmove', (e) => this.state.selectedDisk ? this.handleTouchMove(e) : e.preventDefault(), { passive: false });
+        // Mobile touch support - complete overhaul for better Android support
+        // Remove previous touch event listeners if they exist
+        document.removeEventListener('touchstart', this._boundTouchStart);
+        document.removeEventListener('touchmove', this._boundTouchMove);
+        document.removeEventListener('touchend', this._boundTouchEnd);
+
+        // Create bound functions to ensure proper "this" context
+        this._boundTouchStart = (e) => this.handleTouchStart(e);
+        this._boundTouchMove = (e) => this.handleTouchMove(e);
+        this._boundTouchEnd = (e) => this.handleTouchEnd(e);
+
+        // Add the touch event listeners
+        document.addEventListener('touchstart', this._boundTouchStart, { passive: false });
+        document.addEventListener('touchmove', this._boundTouchMove, { passive: false });
+        document.addEventListener('touchend', this._boundTouchEnd, { passive: false });
 
         // Keyboard support
         document.addEventListener('keydown', (e) => {
@@ -751,50 +762,65 @@ class HanoiGame {
     }
 
     /**
-     * Handle touch start event
+     * Handle touch start event for better mobile experience
      */
     handleTouchStart(e) {
-        e.preventDefault();
+        // Prevent default only if touching on a disk to avoid blocking scrolling
         const touch = e.touches[0];
         const element = document.elementFromPoint(touch.clientX, touch.clientY);
 
-        if (!element || !element.classList.contains('disk')) return;
+        if (element && element.classList.contains('disk')) {
+            e.preventDefault();
 
-        const disk = element;
-        const stack = disk.parentElement;
+            const disk = element;
+            const stack = disk.parentElement;
 
-        // Only allow top disk to be selected
-        if (disk !== stack.lastElementChild) return;
+            // Only allow top disk to be selected
+            if (disk !== stack.lastElementChild) return;
 
-        this.state.selectedDisk = disk;
-        this.state.selectedTower = stack.parentElement;
-        disk.classList.add('selected');
+            // Play selection sound
+            this.playSound(this.dom.selectSound);
 
-        // Store the initial touch position for tracking movement
-        this.state.touchStartX = touch.clientX;
-        this.state.touchStartY = touch.clientY;
+            // Update state
+            this.state.selectedDisk = disk;
+            this.state.selectedTower = stack.parentElement;
 
-        this.highlightValidTowers();
+            // Store initial position
+            this.state.touchStartX = touch.clientX;
+            this.state.touchStartY = touch.clientY;
+
+            // Add visual feedback
+            disk.classList.add('selected');
+
+            // Highlight valid towers
+            this.highlightValidTowers();
+        }
     }
 
     /**
-     * Handle touch move event to improve disc dragging
+     * Handle touch move event
      */
     handleTouchMove(e) {
         if (!this.state.selectedDisk) return;
 
+        // Always prevent default when dragging to prevent scrolling
         e.preventDefault();
+
         const touch = e.touches[0];
 
-        // Visual feedback during dragging
-        this.state.selectedDisk.classList.add('dragging');
-
-        // Calculate distance moved
+        // Calculate movement
         const moveX = touch.clientX - this.state.touchStartX;
         const moveY = touch.clientY - this.state.touchStartY;
 
-        // Apply a visual transform to give feedback that the disk is being moved
-        this.state.selectedDisk.style.transform = `translate(${moveX}px, ${moveY}px) scale(1.1)`;
+        // Only start visual dragging if moved enough (prevents accidental drags)
+        const moveThreshold = 10; // pixels
+        if (Math.abs(moveX) > moveThreshold || Math.abs(moveY) > moveThreshold) {
+            // Add dragging class for styling
+            this.state.selectedDisk.classList.add('dragging');
+
+            // Apply visual transform to follow finger
+            this.state.selectedDisk.style.transform = `translate(${moveX}px, ${moveY}px) scale(1.1)`;
+        }
     }
 
     /**
@@ -803,19 +829,21 @@ class HanoiGame {
     handleTouchEnd(e) {
         if (!this.state.selectedDisk) return;
 
-        // Reset the transform
+        // Reset the transform immediately
         this.state.selectedDisk.style.transform = '';
 
+        // Find where the touch ended
         const touch = e.changedTouches[0];
         const element = document.elementFromPoint(touch.clientX, touch.clientY);
         const targetTower = element ? element.closest('.tower-container') : null;
 
-        if (!targetTower || targetTower === this.state.selectedTower) {
+        if (targetTower && targetTower !== this.state.selectedTower) {
+            // Try to make the move
+            this.processMove(targetTower);
+        } else {
+            // Just clean up if no valid move
             this.cleanupSelection();
-            return;
         }
-
-        this.processMove(targetTower);
     }
 
     /**

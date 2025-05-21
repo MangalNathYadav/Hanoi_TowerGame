@@ -497,6 +497,9 @@ body {
     padding-bottom: 6px;
     background-color: rgba(var(--surface-rgb), 0.7);
     transition: all 0.2s ease;
+    /* Improve touch area */
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .tower-rod {
@@ -540,6 +543,16 @@ body {
     border: 2px solid rgba(255, 255, 255, 0.2);
     -webkit-tap-highlight-color: transparent;
     touch-action: none;
+    /* Improve touch target area */
+    min-height: 34px;
+    padding: 4px 0;
+}
+
+.disk.selected {
+    transform: scale(1.1);
+    box-shadow: var(--shadow-lg);
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    z-index: 1000;
 }
 
 .disk.dragging {
