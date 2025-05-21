@@ -544,23 +544,27 @@ body {
     -webkit-tap-highlight-color: transparent;
     touch-action: none;
     /* Improve touch target area */
-    min-height: 34px;
-    padding: 4px 0;
+    min-height: 38px;
+    padding: 8px 0;
+    /* Ensure text is visible on small disks */
+    font-size: max(12px, 0.8rem);
 }
 
 .disk.selected {
     transform: scale(1.1);
     box-shadow: var(--shadow-lg);
-    border: 2px solid rgba(255, 255, 255, 0.5);
+    border: 2px solid rgba(255, 255, 255, 0.6);
     z-index: 1000;
+    position: relative;
 }
 
 .disk.dragging {
-    transform: scale(1.1);
+    transform: scale(1.05);
     opacity: 0.8;
     box-shadow: var(--shadow-lg);
     cursor: grabbing;
-    z-index: 1000;
+    z-index: 1001;
+    position: relative;
 }
 
 .tower-container.highlight {
@@ -1519,4 +1523,15 @@ ul.shortcuts strong {
 
 .settings-panel button:hover {
     background: var(--surface-variant);
+}
+
+@media (max-width: 400px) {
+    .disk {
+        min-height: 40px;
+        /* Even larger touch target on very small screens */
+        padding: 10px 0;
+    }
+    .tower-container {
+        min-width: 80px;
+    }
 }
